@@ -1,3 +1,6 @@
+[
+![ci](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml)
+
 <p align="center">
 <img src="https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/mule-with-map.png" width="200" height="200"
 style="border-radius:50%" />
