@@ -33,5 +33,5 @@ assert_eq!(mule_map.get(5), Some(&10));
 
 ## Micro Benchmarks
 
-![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/violin.svg)!
-[lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/lines.svg)
+![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/violin.svg)
+![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/lines.svg)
