@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/mule-with-map.png" width="200" height="200"
+<img src="https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/mule-with-map.png" width="200" height="200"
 style="border-radius:50%" />
 </p>
 
@@ -33,5 +33,5 @@ assert_eq!(mule_map.get(5), Some(&10));
 
 ## Micro Benchmarks
 
-![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/violin.svg)
-![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/lines.svg)
+![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/violin.svg)
+![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines.svg)
