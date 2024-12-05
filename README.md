@@ -1,12 +1,11 @@
-[
-![ci](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml)
-
 <p align="center">
 <img src="https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/initial-code/assets/mule-with-map.png" width="200" height="200"
 style="border-radius:50%" />
 </p>
 
 # `MuleMap<🫏,🗺>`
+[![ci](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml)
+
 
 `MuleMap` is a hybrid between a `HashMap` and a lookup table. Use `MuleMap` when the majority of your map accesses use keys that are near a fixed point `n` (by default we assume for keys near 0). `MuleMap` tries to match the API of the standard library `HashMap` (where possible) - making it mostly a drop in replacement for `HashMap`. 
 
