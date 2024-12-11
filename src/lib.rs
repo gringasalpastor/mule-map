@@ -181,7 +181,9 @@ where
                 }
             }
         } else {
-            self.hash_map.get(&key)
+            let result = self.hash_map.get(&key);
+            debug_assert!(!(ZERO_IS_SENTINEL && result.is_some_and(|x| *x == V::default())));
+            result
         }
     }
 
@@ -349,7 +351,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i128, TABLE_MIN_VALUE> for i128 {
     }
 }
 
-/// `ABLE_MIN_VALUE` > `TABLE_MAX_VALUE`
+/// `TABLE_MIN_VALUE` > `TABLE_MAX_VALUE`
 /// ```compile_fail
 /// use mule_map::*;
 /// let mut mule_map_bad = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher,{ ZERO_SENTINEL }, 1, 0>::new();
