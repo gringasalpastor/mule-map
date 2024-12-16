@@ -1,0 +1,21 @@
+[package]
+name = "compare"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+mule-map = {path = ".." }
+fnv_rs = "0.4.3"
+rand = "0.8.5"
+
+[profile.release]
+#lto = true
+#codegen-units = 1
+
+[[bench]]
+name = "bench"
+harness = false
+
+[dependencies]
