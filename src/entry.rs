@@ -40,7 +40,7 @@ pub(crate) mod private {
     impl<'a, K, V, const ZERO_IS_SENTINEL: bool> Entry<'a, K, V, ZERO_IS_SENTINEL>
     where
         K: PrimInt,
-        V: std::default::Default,
+        V: std::default::Default + PartialEq,
     {
         #[inline]
         pub fn or_insert(self, default: V) -> &'a mut V {
@@ -89,22 +89,22 @@ pub(crate) mod private {
             }
         }
 
-        //Not till rust 1.83.0
-        // pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
-        //     match self {
-        //         Occupied(mut entry) => {
-        //             entry.insert(value);
-        //             entry
-        //         }
-        //         Vacant(entry) => entry.insert_entry(value),
-        //     }
-        // }
+        #[inline]
+        pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+            match self {
+                Occupied(mut entry) => {
+                    entry.insert(value);
+                    entry
+                }
+                Vacant(entry) => entry.insert_entry(value),
+            }
+        }
     }
 
     impl<'a, K, V, const ZERO_IS_SENTINEL: bool> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL>
     where
         K: PrimInt,
-        V: std::default::Default,
+        V: std::default::Default + PartialEq,
     {
         #[inline]
         pub fn key(&self) -> K {
@@ -126,21 +126,33 @@ pub(crate) mod private {
         #[inline]
         pub fn get(&self) -> &V {
             match self {
-                OccupiedEntry::HashMap(ref entry) => entry.base.get(),
+                OccupiedEntry::HashMap(ref entry) => {
+                    let result = entry.base.get();
+                    debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
+                    result
+                }
                 OccupiedEntry::Vec(ref entry) => entry.get(),
             }
         }
         #[inline]
         pub fn get_mut(&mut self) -> &mut V {
             match self {
-                OccupiedEntry::HashMap(ref mut entry) => entry.base.get_mut(),
+                OccupiedEntry::HashMap(ref mut entry) => {
+                    let result = entry.base.get_mut();
+                    debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
+                    result
+                }
                 OccupiedEntry::Vec(ref mut entry) => entry.get_mut(),
             }
         }
         #[inline]
         pub fn into_mut(self) -> &'a mut V {
             match self {
-                OccupiedEntry::HashMap(entry) => entry.base.into_mut(),
+                OccupiedEntry::HashMap(entry) => {
+                    let result = entry.base.into_mut();
+                    debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
+                    result
+                }
                 OccupiedEntry::Vec(entry) => entry.into_mut(),
             }
         }
@@ -238,15 +250,15 @@ pub(crate) mod private {
             }
         }
 
-        //Not till rust 1.83.0
-        // pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
-        //     match self {
-        //         VacantEntry::HashMap(entry) => entry::OccupiedEntry {
-        //             base: entry.base.insert_entry(value),
-        //         },
-        //         VacantEntry::Vec(entry) => entry.insert_entry(value),
-        //     }
-        // }
+        #[inline]
+        pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+            match self {
+                VacantEntry::HashMap(entry) => OccupiedEntry::HashMap(OccupiedHashMapEntry {
+                    base: entry.base.insert_entry(value),
+                }),
+                VacantEntry::Vec(entry) => entry.insert_entry(value),
+            }
+        }
     }
 
     impl<'a, K, V, const ZERO_IS_SENTINEL: bool> VacantVecEntry<'a, K, V, ZERO_IS_SENTINEL>
@@ -269,15 +281,16 @@ pub(crate) mod private {
             }
         }
 
-        //Not till rust 1.83.0
-        // pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
-        //     *self.value = value;
-        //     OccupiedVecEntry {
-        //         value: &mut self.value,
-        //         key: self.key,
-        //         sentinel_value: &self.sentinel_value,
-        //     }
-        // }
+        #[inline]
+        pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+            *self.value = value;
+
+            OccupiedEntry::Vec(OccupiedVecEntry {
+                value: self.value,
+                key: self.key,
+                occupied: self.occupied,
+            })
+        }
     }
 }
 
