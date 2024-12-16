@@ -3,6 +3,9 @@ name = "mule-map"
 version = "0.1.0"
 edition = "2021"
 
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
 [dependencies]
 num-traits = { version = "0.2.19", features = ["i128"] }
 paste = "1.0.15"
