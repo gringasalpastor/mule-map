@@ -9,6 +9,7 @@ description = "A hybrid between a HashMap and a lookup table"
 repository = "https://github.com/gringasalpastor/mule-map"
 readme = "README.md"
 categories = ["data-structures"]
+exclude = ["assets", ".github", ".gitignore"]
 
 
 [lints.clippy]
