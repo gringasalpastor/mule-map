@@ -1,3 +1,46 @@
+//! <p align="center">
+//!  <img
+//!   src="https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/mule-with-map.png"
+//!   width="200"
+//!   height="200"
+//!   style="border-radius:50%" />
+//! </p>
+//!
+//! [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. If a key is between  [`TABLE_MIN_VALUE`](MuleMap)
+//! and [`TABLE_MAX_VALUE`](MuleMap), then the value will be stored directly in the lookup table (keys must be integers)
+//! at `table[key - TABLE_MIN_VALUE]`, instead of the slower [`HashMap`]. Benchmarks start to show speed improvements
+//! starting when  ~50% of the key accesses are in the lookup table. Performance is almost identical to [`HashMap`] when
+//! less than 50%  [`MuleMap`] tries to match the API of the standard library `HashMap` when possible.
+//!
+//! ## Example
+//!
+//! ```rust
+//! use mule_map::MuleMap;
+//!
+//! type Hash = fnv_rs::FnvBuildHasher;  // Use whatever hash function you prefer
+//! let mut mule_map = MuleMap::<u32, usize, Hash>::new();
+//!
+//! assert_eq!(mule_map.get(5), None);
+//! let entry = mule_map.entry(5);
+//! entry.or_insert(10);
+//! assert_eq!(mule_map.get(5), Some(&10));
+//! ```
+//!
+//! ## Limitations
+//!
+//!  - Only supports keys that are primitive integer types ([`u8`], [`u16`], [`u32`], [`u64`], [`u128`], ~~[`usize`]~~,
+//!     [`i8`], [`i16`], [`i32`], [`i64`], [`i128`], and ~~[`isize`]~~).
+//!  - Does not currently support automatically converting enum's with primitive representations.
+//!  - Currently the type of a const generic can't depend on another generic type argument, so [`TABLE_MIN_VALUE`](MuleMap) and
+//!     [`TABLE_MAX_VALUE`](MuleMap) can't use the same type as the key. Because of this, I am using [`i128`], but that means
+//!     we can't represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+//!  - Currently requires `std`
+//!
+//! ## Benchmarks
+//!
+//! ![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/violin.svg)
+//! ![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines.svg)
+
 pub use crate::entry::private::{
     Entry, OccupiedEntry, OccupiedHashMapEntry, OccupiedVecEntry, VacantEntry, VacantHashMapEntry,
     VacantVecEntry,
@@ -9,11 +52,62 @@ use sealed::sealed;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+/// Pass this as the generic argument to [`MuleMap`]'s `ZERO_IS_SENTINEL`  to treat 0 as a sentinel and enable various
+/// additional optimizations. See: [`MuleMap`] for more details.
+///
+/// # Example
+///
+/// ```
+/// let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, {ZERO_SENTINEL}>::new();
+/// ```
 pub const ZERO_SENTINEL: bool = true;
+
+/// Pass this as the generic argument to [`MuleMap`]'s `ZERO_IS_SENTINEL`  to **not** treat 0 as a sentinel and **not**
+/// enable various additional optimizations. See: [`MuleMap`] for more details. Note, this is the default.  
+///
+/// # Example
+///
+///```
+/// let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, {NOT_ZERO_SENTINEL}>::new();
+/// ```
 pub const NOT_ZERO_SENTINEL: bool = false;
 
 mod entry;
 
+/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. [`MuleMap`] tries to match the API of the standard
+/// library [`HashMap`] when possible.
+///
+/// # Differences between [`HashMap`] and [`MuleMap`]
+///
+/// - **The key, `K`, must be an integer type.** - The key is directly mapped to the index in the lookup, so it must be
+///     an integer.
+/// - **The key, `K`, is passed by value** - Because it is a primitive integer type.
+/// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
+///     that if you need better performance you will likely also want to use a custom hash function.
+/// - **`const ZERO_IS_SENTINEL: bool`** - If set to [`ZERO_SENTINEL`], then the lookup table will use 0 as a sentinel
+///     which enables various additional optimizations. **NOTE:** debug mode will try to detect (if possible) if a value was
+///     set to 0 and panic. Do not set values to 0 hoping to remove it, use the remove APIs. By default this is set to [`NOT_ZERO_SENTINEL`]
+/// - **`TABLE_MIN_VALUE` and `TABLE_MAX_VALUE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MAX_VALUE`, then
+///     the value will be stored directly in the lookup table at  `table[key - TABLE_MIN_VALUE]`, instead of the `HashMap`.
+///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so `TABLE_MIN_VALUE`
+///     and `TABLE_MAX_VALUE` can’t use the same type as the key. Because of this, I am using [`i128`], but that means we can’t
+///     represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+///
+/// # Performance
+///
+/// Benchmarks start to show speed improvements starting when  ~50% of the key accesses are in the lookup table. Performance
+/// stayed almost identical to [`HashMap`] when less than 50%. Every use case is unique, and I expect users to do their own tests.
+///
+/// ## Example
+///
+/// ```
+/// type Hash = fnv_rs::FnvBuildHasher;  /// Use whatever hash function you prefer
+/// let mut mule_map = MuleMap::<u32, usize, Hash>::new();
+///
+/// assert_eq!(mule_map.get(5), None);
+/// mule_map.entry(5).or_insert(10);
+/// assert_eq!(mule_map.get(5), Some(&10));
+/// ```
 #[derive(Debug)]
 pub struct MuleMap<
     K,
@@ -72,8 +166,19 @@ where
         key <= TABLE_MAX_VALUE.as_() && key >= TABLE_MIN_VALUE.as_()
     }
 
+    /// Creates an empty [`MuleMap`].
+    ///
+    /// The hash map is initially created with a capacity of 0, but space will be allocated for the the lookup table
+    /// based on `TABLE_MIN_VALUE` and `TABLE_MAX_VALUE`.
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// ```
     /// # Panics
-    ///  ...
+    /// - if `TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1` doesn't fit in a `usize`
+    /// - if Lookup table size exceeds [`i32::MAX`]
+    /// - if `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE` can't fit into the the key type, `K`
     #[must_use]
     pub fn new() -> Self
     where
@@ -89,7 +194,7 @@ where
         <i128 as TryInto<K>>::try_into(TABLE_MAX_VALUE)
             .expect("TABLE_MAX_VALUE should fit into key type, K");
         <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE)
-            .expect("TABLE_MAX_VALUE should fit into key type, K");
+            .expect("TABLE_MIN_VALUE should fit into key type, K");
 
         #[allow(clippy::cast_sign_loss)] // Lookup table size can't exceed `usize`
         let table_size: usize = (TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1) as usize;
