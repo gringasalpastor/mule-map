@@ -2,6 +2,9 @@ pub(crate) mod private {
     use num_traits::PrimInt;
     use Entry::{Occupied, Vacant};
 
+    /// A view into a single entry in a map, which may either be vacant or occupied.
+    ///
+    /// This enum is constructed from the entry method on [`MuleMap`].
     pub enum Entry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
         Occupied(OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL>),
         Vacant(VacantEntry<'a, K, V, ZERO_IS_SENTINEL>),

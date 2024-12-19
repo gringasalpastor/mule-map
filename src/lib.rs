@@ -137,6 +137,7 @@ where
     i128: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
 {
+    /// Creates an empty `MuleMap`
     fn default() -> Self {
         Self::new()
     }
@@ -179,7 +180,10 @@ where
     /// - if `TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1` doesn't fit in a `usize`
     /// - if Lookup table size exceeds [`i32::MAX`]
     /// - if `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE` can't fit into the the key type, `K`
+    ///
+    /// Analogous to [`HashMap::new`]
     #[must_use]
+    #[inline]
     pub fn new() -> Self
     where
         <K as TryFrom<i128>>::Error: Debug,
@@ -211,6 +215,9 @@ where
         }
     }
 
+    /// Gets the given key’s corresponding entry in the map for in-place manipulation.
+    ///
+    /// Analogous to [`HashMap::entry`]
     #[inline]
     pub fn entry(&mut self, key: K) -> Entry<'_, K, V, ZERO_IS_SENTINEL> {
         if Self::use_lookup_table(key) {
@@ -266,6 +273,9 @@ where
         }
     }
 
+    /// Returns a reference to the value corresponding to the key.
+    ///
+    /// Analogous to [`HashMap::get`]
     #[inline]
     pub fn get(&self, key: K) -> Option<&V> {
         if Self::use_lookup_table(key) {
@@ -292,6 +302,7 @@ where
         }
     }
 
+    /// ???
     #[inline]
     pub fn bump(&mut self, key: K)
     where
@@ -313,6 +324,7 @@ where
         }
     }
 
+    /// ???
     #[inline]
     pub fn modify_or_insert<F>(&mut self, key: K, f: F, default: V)
     where
@@ -341,6 +353,7 @@ where
 }
 
 #[sealed]
+#[doc(hidden)]
 pub trait KeyIndex<K, const TABLE_MIN_VALUE: i128> {
     fn key_index(&self) -> usize;
 }
@@ -470,8 +483,6 @@ mod tests {
 
     #[test]
     fn it_works() {
-        // fails to compile min > max
-        // let mut mule_map_bad = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, 1, 0>::new(&0);
         let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { ZERO_SENTINEL }>::new();
 
         assert_eq!(mule_map.get(5), None);
