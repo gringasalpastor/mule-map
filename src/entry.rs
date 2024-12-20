@@ -4,7 +4,9 @@ pub(crate) mod private {
 
     /// A view into a single entry in a map, which may either be vacant or occupied.
     ///
-    /// This enum is constructed from the entry method on [`MuleMap`].
+    /// This enum is constructed from the entry method on [`crate::MuleMap`].
+    ///
+    /// Analogous to [`std::collections::hash_map::Entry`]
     pub enum Entry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
         Occupied(OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL>),
         Vacant(VacantEntry<'a, K, V, ZERO_IS_SENTINEL>),
@@ -20,20 +22,24 @@ pub(crate) mod private {
         Vec(VacantVecEntry<'a, K, V, ZERO_IS_SENTINEL>),
     }
 
+    #[doc(hidden)]
     pub struct OccupiedHashMapEntry<'a, K: 'a, V: 'a> {
         pub(crate) base: std::collections::hash_map::OccupiedEntry<'a, K, V>,
     }
 
+    #[doc(hidden)]
     pub struct OccupiedVecEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
         pub(crate) value: &'a mut V,
         pub(crate) occupied: &'a mut bool,
         pub(crate) key: K,
     }
 
+    #[doc(hidden)]
     pub struct VacantHashMapEntry<'a, K: 'a, V: 'a> {
         pub(crate) base: std::collections::hash_map::VacantEntry<'a, K, V>,
     }
 
+    #[doc(hidden)]
     pub struct VacantVecEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
         pub(crate) value: &'a mut V,
         pub(crate) occupied: &'a mut bool,
@@ -45,6 +51,16 @@ pub(crate) mod private {
         K: PrimInt,
         V: std::default::Default + PartialEq,
     {
+        /// Ensures a value is in the entry by inserting the default if empty, and returns a mutable reference to the
+        /// value in the entry.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(3);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::or_insert`]
         #[inline]
         pub fn or_insert(self, default: V) -> &'a mut V {
             match self {
@@ -53,6 +69,16 @@ pub(crate) mod private {
             }
         }
 
+        /// Ensures a value is in the entry by inserting the result of the default function if empty, and returns a
+        /// mutable reference to the value in the entry.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert_with(|| 1 + 1);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::or_insert_with`]
         #[inline]
         pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
             match self {
@@ -60,6 +86,16 @@ pub(crate) mod private {
                 Vacant(entry) => entry.insert(default()),
             }
         }
+
+        /// Ensures a value is in the entry by inserting, if empty, the result of the default function.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert_with_key(|key| key as usize + 1);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::or_insert_with_key`]
         #[inline]
         pub fn or_insert_with_key<F: FnOnce(K) -> V>(self, default: F) -> &'a mut V {
             match self {
@@ -70,6 +106,16 @@ pub(crate) mod private {
                 }
             }
         }
+
+        /// Returns this entry’s key.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// assert_eq!(mule_map.entry(5).key(), 5);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::key`]
         #[inline]
         pub fn key(&self) -> K {
             match *self {
@@ -77,6 +123,16 @@ pub(crate) mod private {
                 Vacant(ref entry) => entry.key(),
             }
         }
+
+        /// Provides in-place mutable access to an occupied entry before any potential inserts into the map.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).and_modify(|e| *e += 1).or_insert(1);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::and_modify`]
         #[inline]
         #[allow(clippy::return_self_not_must_use)]
         pub fn and_modify<F>(self, f: F) -> Self
@@ -92,6 +148,15 @@ pub(crate) mod private {
             }
         }
 
+        /// Sets the value of the entry, and returns an [`OccupiedEntry`].
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// let entry = mule_map.entry(5).insert_entry(10);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::Entry::insert_entry`]
         #[inline]
         pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
             match self {
@@ -109,6 +174,16 @@ pub(crate) mod private {
         K: PrimInt,
         V: std::default::Default + PartialEq,
     {
+        /// Returns this entry’s key.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// assert_eq!(mule_map.entry(5).key(), 5);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::key`]
         #[inline]
         pub fn key(&self) -> K {
             match self {
@@ -116,6 +191,21 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(ref entry) => entry.key(),
             }
         }
+
+        /// Take the ownership of the key and value from the map.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(o) = mule_map.entry(5) {
+        ///    o.remove_entry();
+        /// }
+        ///
+        /// assert_eq!(mule_map.contains_key(5), false);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::remove_entry`]
         #[inline]
         pub fn remove_entry(self) -> (K, V)
         where
@@ -126,6 +216,19 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(entry) => entry.remove_entry(),
             }
         }
+
+        /// Gets a reference to the value in the entry.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(o) = mule_map.entry(5) {
+        ///    assert_eq!(o.get(), &12);
+        /// }
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::get`]
         #[inline]
         pub fn get(&self) -> &V {
             match self {
@@ -137,6 +240,24 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(ref entry) => entry.get(),
             }
         }
+
+        /// Gets a mutable reference to the value in the entry.
+        ///
+        /// If you need a reference to the [`OccupiedEntry`] which may outlive the destruction of the [`Entry`] value, see into_mut.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(mut o) = mule_map.entry(5) {
+        ///     *o.get_mut() += 10;
+        ///     assert_eq!(o.get(), &22);
+        ///     *o.get_mut() += 2;
+        /// }
+        /// assert_eq!(mule_map.get(5), Some(&24));
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::get_mut`]
         #[inline]
         pub fn get_mut(&mut self) -> &mut V {
             match self {
@@ -148,6 +269,22 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(ref mut entry) => entry.get_mut(),
             }
         }
+
+        /// Converts the OccupiedEntry into a mutable reference to the value in the entry with a lifetime bound to the map itself.
+        ///
+        /// If you need multiple references to the OccupiedEntry, see [`OccupiedEntry::get_mut`].
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(mut o) = mule_map.entry(5) {
+        ///     *o.into_mut() += 10;
+        /// }
+        /// assert_eq!(mule_map.get(5), Some(&22));
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::into_mut`]
         #[inline]
         pub fn into_mut(self) -> &'a mut V {
             match self {
@@ -159,6 +296,20 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(entry) => entry.into_mut(),
             }
         }
+
+        /// Sets the value of the entry, and returns the entry’s old value.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(mut o) = mule_map.entry(5) {
+        ///     assert_eq!(o.insert(15), 12);
+        /// }
+        /// assert_eq!(mule_map.get(5), Some(&15));
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::insert`]
         #[inline]
         pub fn insert(&mut self, value: V) -> V {
             match self {
@@ -166,6 +317,20 @@ pub(crate) mod private {
                 OccupiedEntry::Vec(ref mut entry) => entry.insert(value),
             }
         }
+
+        /// Takes the value out of the entry, and returns it.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// mule_map.entry(5).or_insert(12);
+        /// if let mule_map::Entry::Occupied(mut o) = mule_map.entry(5) {
+        ///     assert_eq!(o.remove(), 12);
+        /// }
+        /// assert_eq!(mule_map.contains_key(5), false);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::OccupiedEntry::remove`]
         #[inline]
         pub fn remove(self) -> V
         where
@@ -184,11 +349,11 @@ pub(crate) mod private {
         V: std::default::Default,
     {
         #[inline]
-        pub fn key(&self) -> K {
+        pub(crate) fn key(&self) -> K {
             self.key
         }
         #[inline]
-        pub fn remove_entry(self) -> (K, V)
+        pub(crate) fn remove_entry(self) -> (K, V)
         where
             V: Clone,
         {
@@ -201,25 +366,25 @@ pub(crate) mod private {
             }
         }
         #[inline]
-        pub fn get(&self) -> &V {
+        pub(crate) fn get(&self) -> &V {
             self.value
         }
         #[inline]
-        pub fn get_mut(&mut self) -> &mut V {
+        pub(crate) fn get_mut(&mut self) -> &mut V {
             self.value
         }
         #[inline]
-        pub fn into_mut(self) -> &'a mut V {
+        pub(crate) fn into_mut(self) -> &'a mut V {
             self.value
         }
         #[inline]
-        pub fn insert(&mut self, value: V) -> V {
+        pub(crate) fn insert(&mut self, value: V) -> V {
             let mut value = value;
             std::mem::swap(&mut value, self.get_mut());
             value
         }
         #[inline]
-        pub fn remove(self) -> V
+        pub(crate) fn remove(self) -> V
         where
             V: Clone,
         {
@@ -238,6 +403,15 @@ pub(crate) mod private {
     where
         K: PrimInt,
     {
+        /// Returns this entry’s key.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// assert_eq!(mule_map.entry(5).key(), 5);
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::VacantEntry::key`]
         #[inline]
         pub fn key(&self) -> K {
             match self {
@@ -245,6 +419,19 @@ pub(crate) mod private {
                 VacantEntry::Vec(ref entry) => entry.key(),
             }
         }
+
+        /// Sets the value of the entry with the VacantEntry’s key, and returns a mutable reference to it.
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// if let mule_map::Entry::Vacant(o) = mule_map.entry(5) {
+        ///     o.insert(37);
+        /// }
+        /// assert_eq!(mule_map.get(5), Some(&37));
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::VacantEntry::insert`]
         #[inline]
         pub fn insert(self, value: V) -> &'a mut V {
             match self {
@@ -253,6 +440,18 @@ pub(crate) mod private {
             }
         }
 
+        /// Sets the value of the entry with the VacantEntry’s key, and returns an [`OccupiedEntry`].
+        ///
+        /// # Example
+        /// ```
+        /// let mut mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+        /// if let mule_map::Entry::Vacant(o) = mule_map.entry(5) {
+        ///     o.insert_entry(37);
+        /// }
+        /// assert_eq!(mule_map.get(5), Some(&37));
+        /// ```
+        ///
+        /// Analogous to [`std::collections::hash_map::VacantEntry::insert_entry`]
         #[inline]
         pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
             match self {
@@ -269,11 +468,11 @@ pub(crate) mod private {
         K: PrimInt,
     {
         #[inline]
-        pub fn key(&self) -> K {
+        pub(crate) fn key(&self) -> K {
             self.key
         }
         #[inline]
-        pub fn insert(self, value: V) -> &'a mut V {
+        pub(crate) fn insert(self, value: V) -> &'a mut V {
             if ZERO_IS_SENTINEL {
                 *self.value = value;
                 self.value
@@ -285,8 +484,11 @@ pub(crate) mod private {
         }
 
         #[inline]
-        pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+        pub(crate) fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
             *self.value = value;
+            if !ZERO_IS_SENTINEL {
+                *self.occupied = true;
+            }
 
             OccupiedEntry::Vec(OccupiedVecEntry {
                 value: self.value,
@@ -299,16 +501,12 @@ pub(crate) mod private {
 
 #[cfg(test)]
 mod tests {
-    // use crate::MuleMap;
     use crate::{MuleMap, ZERO_SENTINEL};
 
     #[test]
-    fn it_works() {
+    fn test_entry() {
         let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { ZERO_SENTINEL }>::new();
-
-        let entry = mule_map.entry(5);
-
-        entry.and_modify(|e| *e += 1).or_insert(42);
-        // println!("{:?}", mule_map.get(&5));
+        assert_eq!(mule_map.entry(5).and_modify(|e| *e += 1).or_insert(1), &1);
+        assert_eq!(mule_map.entry(5).and_modify(|e| *e += 1).or_insert(1), &2);
     }
 }

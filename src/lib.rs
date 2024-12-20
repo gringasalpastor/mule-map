@@ -58,6 +58,8 @@ use std::fmt::Debug;
 /// # Example
 ///
 /// ```
+/// use mule_map::*;
+///
 /// let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, {ZERO_SENTINEL}>::new();
 /// ```
 pub const ZERO_SENTINEL: bool = true;
@@ -67,7 +69,9 @@ pub const ZERO_SENTINEL: bool = true;
 ///
 /// # Example
 ///
-///```
+/// ```
+/// use mule_map::*;
+///
 /// let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, {NOT_ZERO_SENTINEL}>::new();
 /// ```
 pub const NOT_ZERO_SENTINEL: bool = false;
@@ -101,6 +105,8 @@ mod entry;
 /// ## Example
 ///
 /// ```
+/// use mule_map::MuleMap;
+///
 /// type Hash = fnv_rs::FnvBuildHasher;  /// Use whatever hash function you prefer
 /// let mut mule_map = MuleMap::<u32, usize, Hash>::new();
 ///
@@ -174,7 +180,7 @@ where
     ///
     /// # Example
     /// ```
-    /// let mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
     /// ```
     /// # Panics
     /// - if `TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1` doesn't fit in a `usize`
@@ -299,6 +305,24 @@ where
             let result = self.hash_map.get(&key);
             debug_assert!(!(ZERO_IS_SENTINEL && result.is_some_and(|x| *x == V::default())));
             result
+        }
+    }
+
+    /// Returns true if the map contains a value for the specified key.
+    ///
+    /// Analogous to [`HashMap::contains_key`]
+    pub fn contains_key(&self, key: K) -> bool {
+        if Self::use_lookup_table(key) {
+            let key_index = key.key_index();
+
+            #[allow(clippy::collapsible_else_if)]
+            if ZERO_IS_SENTINEL == ZERO_SENTINEL {
+                self.table[key_index] != V::default()
+            } else {
+                self.occupied_map[key_index]
+            }
+        } else {
+            self.hash_map.contains_key(&key)
         }
     }
 
@@ -475,7 +499,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i128, TABLE_MIN_VALUE> for i128 {
 /// let mut mule_map_bad = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher,{ ZERO_SENTINEL }, 1, 0>::new();
 ///
 /// ```
-fn _doc_test() {}
+fn _table_min_gt_table_max() {}
 
 #[cfg(test)]
 mod tests {
