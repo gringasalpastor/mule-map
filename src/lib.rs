@@ -162,6 +162,7 @@ where
     S: Default + std::hash::BuildHasher,
     V: Clone + PartialEq + Default,
     i128: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
 {
     const STATIC_ASSERT_MAX_GREATER_OR_EQ_MIN: () = assert!(TABLE_MAX_VALUE >= TABLE_MIN_VALUE);
 
@@ -173,27 +174,59 @@ where
         key <= TABLE_MAX_VALUE.as_() && key >= TABLE_MIN_VALUE.as_()
     }
 
-    /// Creates an empty [`MuleMap`].
-    ///
-    /// The hash map is initially created with a capacity of 0, but space will be allocated for the the lookup table
-    /// based on `TABLE_MIN_VALUE` and `TABLE_MAX_VALUE`.
+    #[inline]
+    #[must_use]
+    pub fn lookup_table_size() -> usize {
+        #[allow(clippy::cast_sign_loss)] // Lookup table size can't exceed `usize`
+        let table_size: usize = (TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1) as usize;
+        table_size
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn occupied_map_size() -> usize {
+        let occupied_map_size: usize = if ZERO_IS_SENTINEL == ZERO_SENTINEL {
+            1
+        } else {
+            Self::lookup_table_size()
+        };
+        occupied_map_size
+    }
+
+    /// Creates an empty [`MuleMap`] where the underlying hash table has at least the specified capacity, using `hasher`
+    /// to hash the keys. Note, space will still be allocated for the the lookup table. The `lookup_table_buffer` and
+    /// `occupied_buffer` will be used for the underlying lookup table (enabling stack allocated lookup table and buffer
+    /// reuse).  **NOTE:** buffers must be the correct size and properly initialized.
     ///
     /// # Example
-    /// ```
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
-    /// ```
-    /// # Panics
-    /// - if `TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1` doesn't fit in a `usize`
-    /// - if Lookup table size exceeds [`i32::MAX`]
-    /// - if `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE` can't fit into the the key type, `K`
     ///
-    /// Analogous to [`HashMap::new`]
-    #[must_use]
+    /// ```rust
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// type Map = mule_map::MuleMap::<u32, usize, Hash>;
+    ///
+    /// let mule_map = Map::with_capacity_and_hasher_and_buffers(
+    ///            0,
+    ///            Hash::default(),
+    ///            vec![0; Map::lookup_table_size()].into_boxed_slice(),
+    ///            vec![false; Map::occupied_map_size()].into_boxed_slice(),
+    ///         );
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    ///  - `TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1` doesn't fit in a `usize`
+    ///  - Lookup table size exceeds [`i32::MAX`]
+    ///  - `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE` can't fit into the the key type, `K`
+    ///  - if passed buffer with invalid size
     #[inline]
-    pub fn new() -> Self
-    where
-        <K as TryFrom<i128>>::Error: Debug,
-    {
+    #[must_use]
+    pub fn with_capacity_and_hasher_and_buffers(
+        capacity: usize,
+        hasher: S,
+        lookup_table_buffer: Box<[V]>,
+        occupied_buffer: Box<[bool]>,
+    ) -> Self {
         #[allow(clippy::let_unit_value)]
         let () = Self::STATIC_ASSERT_MAX_GREATER_OR_EQ_MIN;
         // NOTE: Can't make this a static assert yet because of try_from
@@ -215,10 +248,103 @@ where
         };
 
         MuleMap::<K, V, S, ZERO_IS_SENTINEL, TABLE_MIN_VALUE, TABLE_MAX_VALUE> {
-            table: vec![V::default(); table_size],
-            occupied_map: vec![false; occupied_map_size],
-            hash_map: HashMap::default(),
+            table: lookup_table_buffer.into_vec(),
+            occupied_map: occupied_buffer.into_vec(),
+            hash_map: HashMap::with_capacity_and_hasher(capacity, hasher),
         }
+    }
+
+    /// Creates an empty [`MuleMap`].
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher_and_buffers`]
+    ///
+    /// Analogous to [`HashMap::new`]
+    #[must_use]
+    #[inline]
+    pub fn new() -> Self {
+        Self::with_capacity_and_hasher_and_buffers(
+            0,
+            S::default(),
+            vec![V::default(); Self::lookup_table_size()].into_boxed_slice(),
+            vec![false; Self::occupied_map_size()].into_boxed_slice(),
+        )
+    }
+
+    /// Creates an empty [`MuleMap`] with at least the provided capacity.
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity(100);
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher_and_buffers`]
+    ///
+    /// Analogous to [`HashMap::with_capacity`]
+    #[must_use]
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self::with_capacity_and_hasher_and_buffers(
+            capacity,
+            S::default(),
+            vec![V::default(); Self::lookup_table_size()].into_boxed_slice(),
+            vec![false; Self::occupied_map_size()].into_boxed_slice(),
+        )
+    }
+
+    /// Creates an empty [`MuleMap`] using hash_builder.
+    ///
+    /// # Example
+    /// ```
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_hasher(Hash::default());
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher_and_buffers`]
+    ///
+    /// Analogous to [`HashMap::with_hasher`]
+    #[must_use]
+    #[inline]
+    pub fn with_hasher(hash_builder: S) -> Self {
+        Self::with_capacity_and_hasher_and_buffers(
+            0,
+            hash_builder,
+            vec![V::default(); Self::lookup_table_size()].into_boxed_slice(),
+            vec![false; Self::occupied_map_size()].into_boxed_slice(),
+        )
+    }
+
+    /// Creates an empty [`MuleMap`] with at least the provided capacity and using hash_builder.
+    ///
+    /// # Example
+    /// ```
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity_and_hasher(100, Hash::default());
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher_and_buffers`]
+    ///
+    /// Analogous to [`HashMap::with_capacity_and_hasher`]
+    #[must_use]
+    #[inline]
+    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
+        Self::with_capacity_and_hasher_and_buffers(
+            capacity,
+            hash_builder,
+            vec![V::default(); Self::lookup_table_size()].into_boxed_slice(),
+            vec![false; Self::occupied_map_size()].into_boxed_slice(),
+        )
+    }
+
+    /// Returns capacity of the underlying hash map.
+    ///
+    /// See [`HashMap::capacity`]
+    pub fn capacity(&self) -> usize {
+        Self.hash_map.capacity();
     }
 
     /// Gets the given key’s corresponding entry in the map for in-place manipulation.
