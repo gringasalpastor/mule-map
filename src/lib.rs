@@ -41,16 +41,17 @@
 //! ![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/violin.svg)
 //! ![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines.svg)
 
-pub use crate::entry::private::{
-    Entry, OccupiedEntry, OccupiedHashMapEntry, OccupiedVecEntry, VacantEntry, VacantHashMapEntry,
-    VacantVecEntry,
-};
+pub use crate::entry::*;
 
+use crate::key_index::KeyIndex;
 use num_traits::AsPrimitive;
 use num_traits::PrimInt;
-use sealed::sealed;
 use std::collections::HashMap;
 use std::fmt::Debug;
+
+mod entry;
+mod iterators;
+mod key_index;
 
 /// Pass this as the generic argument to [`MuleMap`]'s `ZERO_IS_SENTINEL`  to treat 0 as a sentinel and enable various
 /// additional optimizations. See: [`MuleMap`] for more details.
@@ -75,8 +76,6 @@ pub const ZERO_SENTINEL: bool = true;
 /// let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, {NOT_ZERO_SENTINEL}>::new();
 /// ```
 pub const NOT_ZERO_SENTINEL: bool = false;
-
-mod entry;
 
 /// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. [`MuleMap`] tries to match the API of the standard
 /// library [`HashMap`] when possible.
@@ -239,14 +238,6 @@ where
         <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE)
             .expect("TABLE_MIN_VALUE should fit into key type, K");
 
-        #[allow(clippy::cast_sign_loss)] // Lookup table size can't exceed `usize`
-        let table_size: usize = (TABLE_MAX_VALUE - TABLE_MIN_VALUE + 1) as usize;
-        let occupied_map_size: usize = if ZERO_IS_SENTINEL == ZERO_SENTINEL {
-            1
-        } else {
-            table_size
-        };
-
         MuleMap::<K, V, S, ZERO_IS_SENTINEL, TABLE_MIN_VALUE, TABLE_MAX_VALUE> {
             table: lookup_table_buffer.into_vec(),
             occupied_map: occupied_buffer.into_vec(),
@@ -296,7 +287,7 @@ where
         )
     }
 
-    /// Creates an empty [`MuleMap`] using hash_builder.
+    /// Creates an empty [`MuleMap`] using `hash_builder`.
     ///
     /// # Example
     /// ```
@@ -318,7 +309,7 @@ where
         )
     }
 
-    /// Creates an empty [`MuleMap`] with at least the provided capacity and using hash_builder.
+    /// Creates an empty [`MuleMap`] with at least the provided capacity and using `hash_builder`.
     ///
     /// # Example
     /// ```
@@ -344,7 +335,7 @@ where
     ///
     /// See [`HashMap::capacity`]
     pub fn capacity(&self) -> usize {
-        Self.hash_map.capacity();
+        self.hash_map.capacity()
     }
 
     /// Gets the given key’s corresponding entry in the map for in-place manipulation.
@@ -502,131 +493,6 @@ where
     }
 }
 
-#[sealed]
-#[doc(hidden)]
-pub trait KeyIndex<K, const TABLE_MIN_VALUE: i128> {
-    fn key_index(&self) -> usize;
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u8, TABLE_MIN_VALUE> for u8 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types becasue key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u8) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u16, TABLE_MIN_VALUE> for u16 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types becasue key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u16) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u32, TABLE_MIN_VALUE> for u32 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types becasue key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u64, TABLE_MIN_VALUE> for u64 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types becasue key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u64) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u128, TABLE_MIN_VALUE> for u128 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types becasue key >= TABLE_MIN_VALUE
-        // NOTE: i128 can't represent u128::MAX, but it's value will still fit in u128
-        (*self - TABLE_MIN_VALUE as u128) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i8, TABLE_MIN_VALUE> for i8 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: Promotion to i16 _needed_ for subtractions because difference could exceed i8::MAX
-        (i16::from(*self) - TABLE_MIN_VALUE as i16) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i16, TABLE_MIN_VALUE> for i16 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: Promotion to i32 _needed_ for subtractions because difference could exceed i16::MAX
-        (i32::from(*self) - TABLE_MIN_VALUE as i32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i32, TABLE_MIN_VALUE> for i32 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i32
-        (*self - TABLE_MIN_VALUE as i32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i64, TABLE_MIN_VALUE> for i64 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i64
-        (*self - TABLE_MIN_VALUE as i64) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i128, TABLE_MIN_VALUE> for i128 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size (difference) will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i128
-        (*self - TABLE_MIN_VALUE) as usize
-    }
-}
-
-/// `TABLE_MIN_VALUE` > `TABLE_MAX_VALUE`
-/// ```compile_fail
-/// use mule_map::*;
-/// let mut mule_map_bad = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher,{ ZERO_SENTINEL }, 1, 0>::new();
-///
-/// ```
-fn _table_min_gt_table_max() {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -641,3 +507,11 @@ mod tests {
         assert_eq!(mule_map.get(5), Some(&10));
     }
 }
+
+/// `TABLE_MIN_VALUE` > `TABLE_MAX_VALUE`
+/// ```compile_fail
+/// use mule_map::*;
+/// let mut mule_map_bad = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher,{ ZERO_SENTINEL }, 1, 0>::new();
+///
+/// ```
+fn _table_min_gt_table_max() {}
