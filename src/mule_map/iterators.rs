@@ -1,5 +1,6 @@
-use crate::KeyIndex;
+use crate::mule_map::key_index::KeyIndex;
 use crate::MuleMap;
+
 use num_traits::AsPrimitive;
 use num_traits::PrimInt;
 use std::fmt::Debug;
@@ -27,7 +28,7 @@ where
     where
         usize: AsPrimitive<K>,
     {
-        self.hash_map.keys().map(|&key| key).chain(
+        self.hash_map.keys().copied().chain(
             self.occupied_map
                 .iter()
                 .enumerate()
