@@ -18,7 +18,7 @@ module_name_repetitions = "allow"
 
 [dependencies]
 num-traits = { version = "0.2.19", features = ["i128"] }
-sealed = "0.5.0"
+sealed = "0.6.0"
 
 [dev-dependencies]
 fnv_rs = "0.4.3"
