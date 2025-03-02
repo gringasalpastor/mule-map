@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion /*,Throughput*/};
 use mule_map::MuleMap;
 use rand::distributions::Distribution;
 use rand::distributions::Uniform;
@@ -31,7 +31,7 @@ fn entry_insert(c: &mut Criterion) {
 
         keys.extend((keys.len()..ITERATIONS).map(|_| distr_large.sample(&mut rng)));
         keys.shuffle(&mut rng);
-        let mut mule_map =
+        let mut _mule_map =
             MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { mule_map::ZERO_SENTINEL }>::new();
         let mut mule_map_bump =
             MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { mule_map::ZERO_SENTINEL }>::new();
