@@ -5,7 +5,7 @@ use num_traits::AsPrimitive;
 use num_traits::PrimInt;
 use std::fmt::Debug;
 
-struct Iter {}
+// struct Iter {}
 
 impl<
         K,
@@ -22,7 +22,7 @@ where
     i128: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
 {
-    fn iter(
+    fn _iter(
         &self,
     ) -> impl Iterator<Item = K> + use<'_, K, V, S, ZERO_IS_SENTINEL, TABLE_MIN_VALUE, TABLE_MAX_VALUE>
     where
