@@ -2,7 +2,7 @@
 name = "mule-map"
 authors = ["Michael Hancock"]
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 keywords = ["hash", "hashmap", "hybrid", "map", "table"]
 description = "A hybrid between a HashMap and a lookup table"
