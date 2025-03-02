@@ -8,7 +8,7 @@ publish = false
 criterion = { version = "0.5.1", features = ["html_reports"] }
 mule-map = {path = ".." }
 fnv_rs = "0.4.3"
-rand = "0.8.5"
+rand = "0.9.0"
 
 [profile.release]
 #lto = true

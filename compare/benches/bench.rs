@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion /*,Throughput*/};
 use mule_map::MuleMap;
-use rand::distributions::Distribution;
-use rand::distributions::Uniform;
+use rand::distr::Distribution;
+use rand::distr::Uniform;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -12,10 +12,10 @@ const ITERATIONS: usize = 10_000;
 fn entry_insert(c: &mut Criterion) {
     let mut group = c.benchmark_group("entry_insert");
 
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
-    let distr_small = Uniform::new_inclusive(0, u8::MAX as u32);
-    let distr_large = Uniform::new_inclusive(u8::MAX as u32 + 1, u16::MAX as u32);
+    let distr_small = Uniform::new_inclusive(0, u8::MAX as u32).unwrap();
+    let distr_large = Uniform::new_inclusive(u8::MAX as u32 + 1, u16::MAX as u32).unwrap();
     // let fractions_of_small = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     let fractions_of_small = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     // let fractions_of_small = [1.0];
