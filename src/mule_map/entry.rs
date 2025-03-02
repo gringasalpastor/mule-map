@@ -186,8 +186,8 @@ where
     #[inline]
     pub fn key(&self) -> K {
         match self {
-            OccupiedEntry::HashMap(ref entry) => *entry.base.key(),
-            OccupiedEntry::Vec(ref entry) => entry.key(),
+            OccupiedEntry::HashMap(entry) => *entry.base.key(),
+            OccupiedEntry::Vec(entry) => entry.key(),
         }
     }
 
@@ -231,12 +231,12 @@ where
     #[inline]
     pub fn get(&self) -> &V {
         match self {
-            OccupiedEntry::HashMap(ref entry) => {
+            OccupiedEntry::HashMap(entry) => {
                 let result = entry.base.get();
                 debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
                 result
             }
-            OccupiedEntry::Vec(ref entry) => entry.get(),
+            OccupiedEntry::Vec(entry) => entry.get(),
         }
     }
 
@@ -260,12 +260,12 @@ where
     #[inline]
     pub fn get_mut(&mut self) -> &mut V {
         match self {
-            OccupiedEntry::HashMap(ref mut entry) => {
+            OccupiedEntry::HashMap(entry) => {
                 let result = entry.base.get_mut();
                 debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
                 result
             }
-            OccupiedEntry::Vec(ref mut entry) => entry.get_mut(),
+            OccupiedEntry::Vec(entry) => entry.get_mut(),
         }
     }
 
@@ -312,8 +312,8 @@ where
     #[inline]
     pub fn insert(&mut self, value: V) -> V {
         match self {
-            OccupiedEntry::HashMap(ref mut entry) => entry.base.insert(value),
-            OccupiedEntry::Vec(ref mut entry) => entry.insert(value),
+            OccupiedEntry::HashMap(entry) => entry.base.insert(value),
+            OccupiedEntry::Vec(entry) => entry.insert(value),
         }
     }
 
@@ -414,8 +414,8 @@ where
     #[inline]
     pub fn key(&self) -> K {
         match self {
-            VacantEntry::HashMap(ref entry) => *entry.base.key(),
-            VacantEntry::Vec(ref entry) => entry.key(),
+            VacantEntry::HashMap(entry) => *entry.base.key(),
+            VacantEntry::Vec(entry) => entry.key(),
         }
     }
 
