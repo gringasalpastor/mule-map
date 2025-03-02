@@ -77,23 +77,38 @@ fn entry_insert(c: &mut Criterion) {
             },
         );
 
-        // let mut hash_map_hand_rolled: HashMap<u32, usize, fnv_rs::FnvBuildHasher> =
-        //     Default::default();
-        // let mut table_hand_rolled: Vec<usize> = vec![0; u8::MAX as usize + 1];
+        // use std::num::NonZero;
 
-        // let size = u8::MAX.into();
+        // let mut hash_map_hand_rolled_non_zero: HashMap<u32, usize, fnv_rs::FnvBuildHasher> =
+        //     Default::default();
+        // let mut table_hand_rolled_non_zero: Vec<Option<NonZero<usize>>> =
+        //     vec![None; u8::MAX as usize + 1];
+
+        // const SIZE: u32 = u8::MAX as u32;
 
         // group.bench_with_input(
-        //     BenchmarkId::new("HandRolled", fraction_of_small),
+        //     BenchmarkId::new("HandRolledNonZero", fraction_of_small),
         //     fraction_of_small,
         //     |b, _fraction_of_small| {
         //         b.iter(|| {
         //             for &key in keys.iter() {
-        //                 if key <= size {
-        //                     table_hand_rolled[key as usize] += 1;
+        //                 if key <= SIZE {
+        //                     unsafe {
+        //                         table_hand_rolled_non_zero[key as usize] =
+        //                             Some(NonZero::<usize>::new_unchecked(
+        //                                 table_hand_rolled_non_zero[key as usize]
+        //                                     .map(|x| x.get())
+        //                                     .unwrap_or(0)
+        //                                     + 1,
+        //                             ));
+
+        //                         // *std::mem::transmute::<&mut Option<NonZero<usize>>, &mut usize>(
+        //                         //     &mut table_hand_rolled_non_zero[key as usize],
+        //                         // ) += 1;
+        //                     }
         //                 } else {
-        //                     hash_map_hand_rolled
-        //                         .entry(key as u32)
+        //                     hash_map_hand_rolled_non_zero
+        //                         .entry(key)
         //                         .and_modify(|counter| *counter += 1)
         //                         .or_insert(1);
         //                 }
@@ -101,6 +116,29 @@ fn entry_insert(c: &mut Criterion) {
         //         });
         //     },
         // );
+
+        //     let mut hash_map_hand_rolled: HashMap<u32, usize, fnv_rs::FnvBuildHasher> =
+        //         Default::default();
+        //     let mut table_hand_rolled: Vec<usize> = vec![0; u8::MAX as usize + 1];
+
+        //     group.bench_with_input(
+        //         BenchmarkId::new("HandRolled", fraction_of_small),
+        //         fraction_of_small,
+        //         |b, _fraction_of_small| {
+        //             b.iter(|| {
+        //                 for &key in keys.iter() {
+        //                     if key <= SIZE {
+        //                         table_hand_rolled[key as usize] += 1;
+        //                     } else {
+        //                         hash_map_hand_rolled
+        //                             .entry(key)
+        //                             .and_modify(|counter| *counter += 1)
+        //                             .or_insert(1);
+        //                     }
+        //                 }
+        //             });
+        //         },
+        //     );
     }
 
     group.finish();
