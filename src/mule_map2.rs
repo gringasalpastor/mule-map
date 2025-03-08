@@ -137,7 +137,9 @@ where
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
 {
-    // const STATIC_ASSERT_MAX_GREATER_OR_EQ_ONE: () = assert!(TABLE_SIZE >= TABLE_MIN_VALUE);
+    // Hard limit, way beyond practical lookup table size. This makes it easier to calculate the key index
+    const STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX: () =
+        assert!((TABLE_SIZE as u128) < i32::MAX as u128);
 
     #[inline]
     #[must_use]
@@ -168,6 +170,13 @@ where
     #[must_use]
     #[inline]
     pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
+        let () = Self::STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX;
+
+        <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE + TABLE_SIZE as i128)
+            .expect("TABLE_MIN_VALUE + TABLE_SIZE should fit into key type, K");
+        <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE)
+            .expect("TABLE_MIN_VALUE should fit into key type, K");
+
         MuleMap2::<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE> {
             hash_map: HashMap::with_capacity_and_hasher(capacity, hash_builder),
             table: [None; TABLE_SIZE],
