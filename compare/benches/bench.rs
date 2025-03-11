@@ -1,6 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion /*,Throughput*/};
+use criterion::{BenchmarkId, Criterion /*,Throughput*/, criterion_group, criterion_main};
 use mule_map::MuleMap;
-use mule_map::MuleMap2;
 use rand::distr::Distribution;
 use rand::distr::Uniform;
 use rand::rng;
@@ -52,31 +51,30 @@ fn entry_insert(c: &mut Criterion) {
             },
         );
 
-        // MuleMap::bump
-        let mut mule_map_bump =
-            MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { mule_map::ZERO_SENTINEL }>::new();
+        // MuleMap bump
+        let mut mule_map_bump = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
         group.bench_with_input(
             BenchmarkId::new("MuleMap::bump", fraction_of_small),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
                     for &key in keys.iter() {
-                        mule_map_bump.bump(key);
+                        mule_map_bump.bump_int(key);
                     }
                 });
             },
         );
 
-        // MuleMap2::bump
-        let mut mule_map2_bump = MuleMap2::<u32, NonZero<usize>, fnv_rs::FnvBuildHasher>::new();
+        // MuleMap NonZero bump
+        let mut mule_nonzero_bump = MuleMap::<u32, NonZero<usize>, fnv_rs::FnvBuildHasher>::new();
 
         group.bench_with_input(
-            BenchmarkId::new("MuleMap2::bump", fraction_of_small),
+            BenchmarkId::new("MuleMap NonZero bump", fraction_of_small),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
                     for &key in keys.iter() {
-                        mule_map2_bump.bump_non_zero(key);
+                        mule_nonzero_bump.bump_non_zero(key);
                     }
                 });
             },

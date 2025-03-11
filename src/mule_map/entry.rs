@@ -1,24 +1,24 @@
-use num_traits::PrimInt;
 use Entry::{Occupied, Vacant};
+use num_traits::PrimInt;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
 ///
 /// This enum is constructed from the entry method on [`crate::MuleMap`].
 ///
 /// Analogous to [`std::collections::hash_map::Entry`]
-pub enum Entry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
-    Occupied(OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL>),
-    Vacant(VacantEntry<'a, K, V, ZERO_IS_SENTINEL>),
+pub enum Entry<'a, K: 'a, V: 'a> {
+    Occupied(OccupiedEntry<'a, K, V>),
+    Vacant(VacantEntry<'a, K, V>),
 }
 
-pub enum OccupiedEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
+pub enum OccupiedEntry<'a, K: 'a, V: 'a> {
     HashMap(OccupiedHashMapEntry<'a, K, V>),
-    Vec(OccupiedVecEntry<'a, K, V, ZERO_IS_SENTINEL>),
+    Vec(OccupiedVecEntry<'a, K, V>),
 }
 
-pub enum VacantEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
+pub enum VacantEntry<'a, K: 'a, V: 'a> {
     HashMap(VacantHashMapEntry<'a, K, V>),
-    Vec(VacantVecEntry<'a, K, V, ZERO_IS_SENTINEL>),
+    Vec(VacantVecEntry<'a, K, V>),
 }
 
 #[doc(hidden)]
@@ -27,9 +27,8 @@ pub struct OccupiedHashMapEntry<'a, K: 'a, V: 'a> {
 }
 
 #[doc(hidden)]
-pub struct OccupiedVecEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
-    pub(crate) value: &'a mut V,
-    pub(crate) occupied: &'a mut bool,
+pub struct OccupiedVecEntry<'a, K: 'a, V: 'a> {
+    pub(crate) value: &'a mut Option<V>,
     pub(crate) key: K,
 }
 
@@ -39,13 +38,12 @@ pub struct VacantHashMapEntry<'a, K: 'a, V: 'a> {
 }
 
 #[doc(hidden)]
-pub struct VacantVecEntry<'a, K: 'a, V: 'a, const ZERO_IS_SENTINEL: bool> {
-    pub(crate) value: &'a mut V,
-    pub(crate) occupied: &'a mut bool,
+pub struct VacantVecEntry<'a, K: 'a, V: 'a> {
+    pub(crate) value: &'a mut Option<V>,
     pub(crate) key: K,
 }
 
-impl<'a, K, V, const ZERO_IS_SENTINEL: bool> Entry<'a, K, V, ZERO_IS_SENTINEL>
+impl<'a, K, V> Entry<'a, K, V>
 where
     K: PrimInt,
     V: std::default::Default + PartialEq,
@@ -157,7 +155,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::Entry::insert_entry`]
     #[inline]
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
         match self {
             Occupied(mut entry) => {
                 entry.insert(value);
@@ -168,7 +166,7 @@ where
     }
 }
 
-impl<'a, K, V, const ZERO_IS_SENTINEL: bool> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL>
+impl<'a, K, V> OccupiedEntry<'a, K, V>
 where
     K: PrimInt,
     V: std::default::Default + PartialEq,
@@ -231,11 +229,7 @@ where
     #[inline]
     pub fn get(&self) -> &V {
         match self {
-            OccupiedEntry::HashMap(entry) => {
-                let result = entry.base.get();
-                debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
-                result
-            }
+            OccupiedEntry::HashMap(entry) => entry.base.get(),
             OccupiedEntry::Vec(entry) => entry.get(),
         }
     }
@@ -260,11 +254,7 @@ where
     #[inline]
     pub fn get_mut(&mut self) -> &mut V {
         match self {
-            OccupiedEntry::HashMap(entry) => {
-                let result = entry.base.get_mut();
-                debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
-                result
-            }
+            OccupiedEntry::HashMap(entry) => entry.base.get_mut(),
             OccupiedEntry::Vec(entry) => entry.get_mut(),
         }
     }
@@ -289,7 +279,6 @@ where
         match self {
             OccupiedEntry::HashMap(entry) => {
                 let result = entry.base.into_mut();
-                debug_assert!(!(ZERO_IS_SENTINEL && *result == V::default()));
                 result
             }
             OccupiedEntry::Vec(entry) => entry.into_mut(),
@@ -342,39 +331,32 @@ where
     }
 }
 
-impl<'a, K, V, const ZERO_IS_SENTINEL: bool> OccupiedVecEntry<'a, K, V, ZERO_IS_SENTINEL>
+impl<'a, K, V> OccupiedVecEntry<'a, K, V>
 where
     K: PrimInt,
-    V: std::default::Default,
 {
     #[inline]
     pub(crate) fn key(&self) -> K {
         self.key
     }
     #[inline]
-    pub(crate) fn remove_entry(self) -> (K, V)
-    where
-        V: Clone,
-    {
-        if ZERO_IS_SENTINEL {
-            *self.value = Default::default();
-            (self.key, self.value.clone())
-        } else {
-            *self.occupied = false;
-            (self.key, self.value.clone())
-        }
+    pub(crate) fn remove_entry(self) -> (K, V) {
+        (
+            self.key,
+            self.value.take().expect("Value should be occupied."),
+        )
     }
     #[inline]
     pub(crate) fn get(&self) -> &V {
-        self.value
+        self.value.as_ref().expect("Value should be occupied.")
     }
     #[inline]
     pub(crate) fn get_mut(&mut self) -> &mut V {
-        self.value
+        self.value.as_mut().expect("Value should be occupied.")
     }
     #[inline]
     pub(crate) fn into_mut(self) -> &'a mut V {
-        self.value
+        self.value.as_mut().expect("Value should be occupied.")
     }
     #[inline]
     pub(crate) fn insert(&mut self, value: V) -> V {
@@ -383,22 +365,12 @@ where
         value
     }
     #[inline]
-    pub(crate) fn remove(self) -> V
-    where
-        V: Clone,
-    {
-        if ZERO_IS_SENTINEL {
-            let value = self.value.clone();
-            *self.value = Default::default();
-            value
-        } else {
-            *self.occupied = false;
-            self.value.clone()
-        }
+    pub(crate) fn remove(self) -> V {
+        self.value.take().expect("Value should be occupied.")
     }
 }
 
-impl<'a, K, V, const ZERO_IS_SENTINEL: bool> VacantEntry<'a, K, V, ZERO_IS_SENTINEL>
+impl<'a, K, V> VacantEntry<'a, K, V>
 where
     K: PrimInt,
 {
@@ -452,7 +424,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::VacantEntry::insert_entry`]
     #[inline]
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
         match self {
             VacantEntry::HashMap(entry) => OccupiedEntry::HashMap(OccupiedHashMapEntry {
                 base: entry.base.insert_entry(value),
@@ -462,7 +434,7 @@ where
     }
 }
 
-impl<'a, K, V, const ZERO_IS_SENTINEL: bool> VacantVecEntry<'a, K, V, ZERO_IS_SENTINEL>
+impl<'a, K, V> VacantVecEntry<'a, K, V>
 where
     K: PrimInt,
 {
@@ -470,40 +442,30 @@ where
     pub(crate) fn key(&self) -> K {
         self.key
     }
+
     #[inline]
     pub(crate) fn insert(self, value: V) -> &'a mut V {
-        if ZERO_IS_SENTINEL {
-            *self.value = value;
-            self.value
-        } else {
-            *self.occupied = true;
-            *self.value = value;
-            self.value
-        }
+        self.value.insert(value)
     }
 
     #[inline]
-    pub(crate) fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, ZERO_IS_SENTINEL> {
-        *self.value = value;
-        if !ZERO_IS_SENTINEL {
-            *self.occupied = true;
-        }
+    pub(crate) fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V> {
+        _ = self.value.insert(value);
 
         OccupiedEntry::Vec(OccupiedVecEntry {
             value: self.value,
             key: self.key,
-            occupied: self.occupied,
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{MuleMap, ZERO_SENTINEL};
+    use crate::MuleMap;
 
     #[test]
     fn test_entry() {
-        let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher, { ZERO_SENTINEL }>::new();
+        let mut mule_map = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
         assert_eq!(mule_map.entry(5).and_modify(|e| *e += 1).or_insert(1), &1);
         assert_eq!(mule_map.entry(5).and_modify(|e| *e += 1).or_insert(1), &2);
     }
