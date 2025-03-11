@@ -1,3 +1,7 @@
+use entry::{
+    Entry, OccupiedEntry, OccupiedHashMapEntry, OccupiedVecEntry, VacantEntry, VacantHashMapEntry,
+    VacantVecEntry,
+};
 use key_index::KeyIndex;
 use num_traits::AsPrimitive;
 use num_traits::PrimInt;
@@ -6,6 +10,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZero;
 
+pub(crate) mod entry;
 mod key_index;
 
 #[sealed]
@@ -144,8 +149,7 @@ where
     #[inline]
     #[must_use]
     fn use_lookup_table(key: K) -> bool {
-        // `TABLE_SIZE` and `TABLE_MIN_VALUE` must fit into a key type, K
-        // Hopfully in the future they can have type K
+        // NOTE: TABLE_MIN_VALUE + TABLE_SIZE and TABLE_MIN_VALUE must fit into a key type, K
         key < (TABLE_MIN_VALUE.as_() + TABLE_SIZE.as_()) && key >= TABLE_MIN_VALUE.as_()
     }
 
@@ -183,8 +187,47 @@ where
         }
     }
 
+    #[must_use]
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.hash_map.capacity()
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn get(&self, key: K) -> Option<&V> {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].as_ref()
+        } else {
+            let result = self.hash_map.get(&key);
+            result
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn contains_key(&self, key: K) -> bool {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].is_some()
+        } else {
+            self.hash_map.contains_key(&key)
+        }
+    }
+
+    #[inline]
+    pub fn modify_or_insert<F>(&mut self, key: K, f: F, default: V)
+    where
+        F: FnOnce(&mut V),
+    {
+        if Self::use_lookup_table(key) {
+            let value = &mut self.table[key.key_index()];
+            match value {
+                Some(x) => f(x),
+                None => *value = Some(default),
+            }
+        } else {
+            self.hash_map.entry(key).and_modify(f).or_insert(default);
+        }
     }
 
     #[inline]
@@ -231,13 +274,29 @@ where
         }
     }
 
+    #[must_use]
     #[inline]
-    pub fn get(&self, key: K) -> Option<&V> {
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
         if Self::use_lookup_table(key) {
-            self.table[key.key_index()].as_ref()
+            let value: &mut Option<V> = &mut self.table[key.key_index()];
+            match value {
+                Some(_) => Entry::<K, V>::Occupied(OccupiedEntry::Vec(OccupiedVecEntry {
+                    value: value,
+                    key,
+                })),
+                None => {
+                    Entry::<K, V>::Vacant(VacantEntry::Vec(VacantVecEntry { value: value, key }))
+                }
+            }
         } else {
-            let result = self.hash_map.get(&key);
-            result
+            match self.hash_map.entry(key) {
+                std::collections::hash_map::Entry::Occupied(base) => {
+                    Entry::<K, V>::Occupied(OccupiedEntry::HashMap(OccupiedHashMapEntry { base }))
+                }
+                std::collections::hash_map::Entry::Vacant(base) => {
+                    Entry::<K, V>::Vacant(VacantEntry::HashMap(VacantHashMapEntry { base }))
+                }
+            }
         }
     }
 }
@@ -265,5 +324,13 @@ mod tests {
             mule_map_non_zero.get(999999),
             NonZero::<i32>::new(2).as_ref()
         );
+
+        let mut mule_map = MuleMap2::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+
+        mule_map.modify_or_insert(100, |x| *x += 10, 1);
+        assert_eq!(mule_map.get(100), Some(&1));
+
+        mule_map.modify_or_insert(100, |x| *x += 10, 1);
+        assert_eq!(mule_map.get(100), Some(&11));
     }
 }
