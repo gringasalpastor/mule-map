@@ -15,6 +15,7 @@ style="border-radius:50%" />
 
 ```rust
 use mule_map::MuleMap;
+use std::num::NonZero;
 type Hash = fnv_rs::FnvBuildHasher;  // Use whatever hash function you prefer
 
 // Using Entry API
@@ -29,11 +30,11 @@ let mut mule_map_non_zero = MuleMap::<u32, NonZero<i32>, Hash>::default();
 
 mule_map_non_zero.bump_non_zero(10);
 mule_map_non_zero.bump_non_zero(10);
-mule_map_non_zero.bump_non_zero(999999);
-mule_map_non_zero.bump_non_zero(999999);
+mule_map_non_zero.bump_non_zero(999_999);
+mule_map_non_zero.bump_non_zero(999_999);
 
 assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
-assert_eq!(mule_map_non_zero.get(999999),NonZero::<i32>::new(2).as_ref());
+assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 ```
 
 ## Highlights
@@ -52,7 +53,7 @@ assert_eq!(mule_map_non_zero.get(999999),NonZero::<i32>::new(2).as_ref());
 
 Licensed under either of:
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0))
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT))
 
 at your option.

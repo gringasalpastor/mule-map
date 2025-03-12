@@ -105,6 +105,52 @@ impl NonZeroInt for std::num::NonZeroUsize {
     type UnderlyingType = usize;
 }
 
+/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed keys
+/// in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in the lookup table.
+///
+/// # Differences between [`HashMap`] and [`MuleMap`]
+///
+/// - **The key, `K`, must be an integer type.** - The key is directly mapped to the index in the lookup, so it must be
+///     an integer.
+/// - **The key, `K`, is passed by value** - Because it is a primitive integer type.
+/// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
+///     that if you need better performance you will likely also want to use a custom hash function.
+/// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE + TABLE_SIZE`, then
+///     the value will be stored directly in the lookup table, instead of using the `HashMap`.
+///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so `TABLE_MIN_VALUE`
+///     can’t use the same type as the key. Because of this, We are using [`i128`], but that means we can’t
+///     represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+///
+/// # Performance
+///
+/// Benchmarks (using random selection) start to show speed improvements when about 50% of the key accesses are in the
+/// lookup table. Performance is almost identical to `HashMap` with less than 50%.
+///
+/// ## Example
+///
+/// ```
+/// use mule_map::MuleMap;
+/// use std::num::NonZero;
+/// type Hash = fnv_rs::FnvBuildHasher;  // Use whatever hash function you prefer
+///
+/// // Using Entry API
+/// let mut mule_map = MuleMap::<u32, usize, Hash>::new();
+/// assert_eq!(mule_map.get(5), None);
+/// let entry = mule_map.entry(5);
+/// entry.or_insert(10);
+/// assert_eq!(mule_map.get(5), Some(&10));
+///
+/// // Using NonZero and bump
+/// let mut mule_map_non_zero = MuleMap::<u32, NonZero<i32>, Hash>::default();
+///
+/// mule_map_non_zero.bump_non_zero(10);
+/// mule_map_non_zero.bump_non_zero(10);
+/// mule_map_non_zero.bump_non_zero(999_999);
+/// mule_map_non_zero.bump_non_zero(999_999);
+///
+// assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
+// assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
+/// ```
 #[derive(Debug)]
 pub struct MuleMap<
     K,
@@ -127,6 +173,16 @@ where
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
 {
+    /// Creates an empty [`MuleMap`].
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::default();
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher`]
+    ///
+    /// Analogous to [`HashMap::default`]
     fn default() -> Self {
         Self::new()
     }
@@ -153,24 +209,69 @@ where
         key < (TABLE_MIN_VALUE.as_() + TABLE_SIZE.as_()) && key >= TABLE_MIN_VALUE.as_()
     }
 
+    /// Creates an empty [`MuleMap`].
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher`]
+    ///
+    /// Analogous to [`HashMap::new`]
     #[must_use]
     #[inline]
     pub fn new() -> Self {
         Self::with_capacity_and_hasher(0, S::default())
     }
 
+    /// Creates an empty [`MuleMap`] with at least the provided capacity.
+    ///
+    /// # Example
+    /// ```
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity(100);
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher`]
+    ///
+    /// Analogous to [`HashMap::with_capacity`]
     #[must_use]
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self::with_capacity_and_hasher(capacity, S::default())
     }
 
+    /// Creates an empty [`MuleMap`] using `hash_builder`.
+    ///
+    /// # Example
+    /// ```
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_hasher(Hash::default());
+    /// ```
+    ///
+    /// See: [`MuleMap::with_capacity_and_hasher`]
+    ///
+    /// Analogous to [`HashMap::with_hasher`]
     #[must_use]
     #[inline]
     pub fn with_hasher(hash_builder: S) -> Self {
         Self::with_capacity_and_hasher(0, hash_builder)
     }
 
+    /// Creates an empty [`MuleMap`] with at least the provided capacity and using `hash_builder`.
+    ///
+    /// # Example
+    /// ```
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity_and_hasher(100, Hash::default());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    ///  - `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE + TABLE_SIZE` doesn't fit into key type, `K`.
+    ///
+    /// Analogous to [`HashMap::with_capacity_and_hasher`]
     #[must_use]
     #[inline]
     pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
@@ -187,12 +288,18 @@ where
         }
     }
 
+    /// Returns capacity of the underlying hash map.
+    ///
+    /// See [`HashMap::capacity`]
     #[must_use]
     #[inline]
     pub fn capacity(&self) -> usize {
         self.hash_map.capacity()
     }
 
+    /// Returns a reference to the value corresponding to the key.
+    ///
+    /// Analogous to [`HashMap::get`]
     #[must_use]
     #[inline]
     pub fn get(&self, key: K) -> Option<&V> {
@@ -204,6 +311,9 @@ where
         }
     }
 
+    /// Returns true if the map contains a value for the specified key.
+    ///
+    /// Analogous to [`HashMap::contains_key`]
     #[must_use]
     #[inline]
     pub fn contains_key(&self, key: K) -> bool {
@@ -214,6 +324,8 @@ where
         }
     }
 
+    /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
+    /// `default`.
     #[inline]
     pub fn modify_or_insert<F>(&mut self, key: K, f: F, default: V)
     where
@@ -230,10 +342,19 @@ where
         }
     }
 
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
+    /// that location.
+    ///
+    /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
+    /// values use [`bump_non_zero`] - It uses the niche optimization for better performance.
+    ///
+    /// # Panics
+    ///
+    /// May panics if adding 1 results in overflow.
     #[inline]
     pub fn bump_int(&mut self, key: K)
     where
-        V: std::ops::AddAssign<V> + num_traits::One + num_traits::Zero + PrimInt,
+        V: std::ops::AddAssign<V> + num_traits::One + num_traits::Zero,
     {
         if Self::use_lookup_table(key) {
             *self.table[key.key_index()].get_or_insert(V::zero()) += V::one();
@@ -245,7 +366,11 @@ where
         }
     }
 
-    /// ????
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
+    /// that location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
+    ///
+    /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`bump_int`].
+    ///
     /// # Panics
     ///
     /// Panics if adding 1 results in overflow.
@@ -274,19 +399,19 @@ where
         }
     }
 
+    /// Gets the given key’s corresponding entry in the map for in-place manipulation.
+    ///
+    /// Analogous to [`HashMap::entry`]
     #[must_use]
     #[inline]
     pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
         if Self::use_lookup_table(key) {
             let value: &mut Option<V> = &mut self.table[key.key_index()];
             match value {
-                Some(_) => Entry::<K, V>::Occupied(OccupiedEntry::Vec(OccupiedVecEntry {
-                    value: value,
-                    key,
-                })),
-                None => {
-                    Entry::<K, V>::Vacant(VacantEntry::Vec(VacantVecEntry { value: value, key }))
+                Some(_) => {
+                    Entry::<K, V>::Occupied(OccupiedEntry::Vec(OccupiedVecEntry { value, key }))
                 }
+                None => Entry::<K, V>::Vacant(VacantEntry::Vec(VacantVecEntry { value, key })),
             }
         } else {
             match self.hash_map.entry(key) {
@@ -317,10 +442,10 @@ mod tests {
         mule_map_non_zero.bump_non_zero(10);
         mule_map_non_zero.bump_non_zero(10);
         assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
-        mule_map_non_zero.bump_non_zero(999999);
-        mule_map_non_zero.bump_non_zero(999999);
+        mule_map_non_zero.bump_non_zero(999_999);
+        mule_map_non_zero.bump_non_zero(999_999);
         assert_eq!(
-            mule_map_non_zero.get(999999),
+            mule_map_non_zero.get(999_999),
             NonZero::<i32>::new(2).as_ref()
         );
 
