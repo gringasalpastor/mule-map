@@ -17,6 +17,7 @@ pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 
 [dependencies]
+bytemuck = "1.22.0"
 num-traits = { version = "0.2.19", features = ["i128"] }
 sealed = "0.6.0"
 
