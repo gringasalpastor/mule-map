@@ -11,6 +11,7 @@ use std::fmt::Debug;
 use std::num::NonZero;
 
 pub(crate) mod entry;
+mod iterators;
 mod key_index;
 
 #[sealed]
