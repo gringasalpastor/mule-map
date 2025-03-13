@@ -300,7 +300,7 @@ where
 
     /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
     ///
-    /// See [`HashMap::capacity`]
+    /// See [`HashMap::clear`]
     pub fn clear(&mut self) {
         self.hash_map.clear();
         self.table.fill(None);
@@ -316,6 +316,26 @@ where
             self.table[key.key_index()].as_ref()
         } else {
             let result = self.hash_map.get(&key);
+            result
+        }
+    }
+
+    /// Returns the key-value pair corresponding to the supplied key.
+    ///
+    /// Analogous to [`HashMap::get_key_value`]
+    pub fn get_key_value(&self, key: K) -> Option<(K, &V)> {
+        let result = None;
+        result.zip(self.get(key))
+    }
+
+    /// Returns a mutable reference to the value corresponding to the key.
+    ///
+    /// Analogous to [`HashMap::get_mut`]
+    pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].as_mut()
+        } else {
+            let result = self.hash_map.get_mut(&key);
             result
         }
     }
