@@ -363,13 +363,21 @@ where
     /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map
     /// did have this key present, the value is updated, and the old value is returned.
     ///
-    /// Analogous to [`HashMap::hasher`]
+    /// Analogous to [`HashMap::insert`]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if Self::use_lookup_table(key) {
             self.table[key.key_index()].replace(value)
         } else {
             self.hash_map.insert(key, value)
         }
+    }
+
+    /// Returns true if the map contains no elements. Checks both the lookup table and the hashmap. Note, there is no
+    /// tracking in the lookup table - in the worst case, we have to check all elements of the lookup table.
+    ///
+    ///  Analogous to [`HashMap::is_empty`]
+    pub fn is_empty(&self) -> bool {
+        self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
     }
 
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
