@@ -46,7 +46,7 @@ pub struct VacantVecEntry<'a, K: 'a, V: 'a> {
 impl<'a, K, V> Entry<'a, K, V>
 where
     K: PrimInt,
-    V: std::default::Default + PartialEq,
+    V: PartialEq,
 {
     /// Ensures a value is in the entry by inserting the default if empty, and returns a mutable reference to the
     /// value in the entry.
@@ -169,7 +169,7 @@ where
 impl<'a, K, V> OccupiedEntry<'a, K, V>
 where
     K: PrimInt,
-    V: std::default::Default + PartialEq,
+    V: PartialEq,
 {
     /// Returns this entry’s key.
     ///
