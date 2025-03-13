@@ -298,6 +298,14 @@ where
         self.hash_map.capacity()
     }
 
+    /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
+    ///
+    /// See [`HashMap::capacity`]
+    pub fn clear(&mut self) {
+        self.hash_map.clear();
+        self.table.fill(None);
+    }
+
     /// Returns a reference to the value corresponding to the key.
     ///
     /// Analogous to [`HashMap::get`]
