@@ -306,6 +306,19 @@ where
         self.table.fill(None);
     }
 
+    /// Returns true if the map contains a value for the specified key.
+    ///
+    /// Analogous to [`HashMap::contains_key`]
+    #[must_use]
+    #[inline]
+    pub fn contains_key(&self, key: K) -> bool {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].is_some()
+        } else {
+            self.hash_map.contains_key(&key)
+        }
+    }
+
     /// Returns a reference to the value corresponding to the key.
     ///
     /// Analogous to [`HashMap::get`]
@@ -335,21 +348,24 @@ where
         if Self::use_lookup_table(key) {
             self.table[key.key_index()].as_mut()
         } else {
-            let result = self.hash_map.get_mut(&key);
-            result
+            self.hash_map.get_mut(&key)
         }
     }
 
-    /// Returns true if the map contains a value for the specified key.
+    /// Returns a reference to the map’s [`BuildHasher`].
     ///
-    /// Analogous to [`HashMap::contains_key`]
-    #[must_use]
-    #[inline]
-    pub fn contains_key(&self, key: K) -> bool {
+    /// Analogous to [`HashMap::hasher`]
+    pub fn hasher(&self) -> &S {
+        self.hash_map.hasher()
+    }
+    /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map did have this key present, the value is updated, and the old value is returned.
+    ///
+    /// Analogous to [`HashMap::hasher`]
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if Self::use_lookup_table(key) {
-            self.table[key.key_index()].is_some()
+            self.table[key.key_index()].replace(value)
         } else {
-            self.hash_map.contains_key(&key)
+            self.hash_map.insert(key, value)
         }
     }
 
