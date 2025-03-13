@@ -48,8 +48,8 @@ where
     K: PrimInt,
     V: PartialEq,
 {
-    /// Ensures a value is in the entry by inserting the default if empty, and returns a mutable reference to the
-    /// value in the entry.
+    /// Ensures a value is in the entry by inserting the default if empty, and returns a mutable reference to the value
+    /// in the entry.
     ///
     /// # Example
     /// ```
@@ -66,8 +66,8 @@ where
         }
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty, and returns a
-    /// mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the result of the default function if empty, and returns a mutable
+    /// reference to the value in the entry.
     ///
     /// # Example
     /// ```
@@ -236,7 +236,8 @@ where
 
     /// Gets a mutable reference to the value in the entry.
     ///
-    /// If you need a reference to the [`OccupiedEntry`] which may outlive the destruction of the [`Entry`] value, see [`OccupiedEntry::into_mut`].
+    /// If you need a reference to the [`OccupiedEntry`] which may outlive the destruction of the [`Entry`] value, see
+    /// [`OccupiedEntry::into_mut`].
     ///
     /// # Example
     /// ```
@@ -259,7 +260,8 @@ where
         }
     }
 
-    /// Converts the [`OccupiedEntry`] into a mutable reference to the value in the entry with a lifetime bound to the map itself.
+    /// Converts the [`OccupiedEntry`] into a mutable reference to the value in the entry with a lifetime bound to the
+    /// map itself.
     ///
     /// If you need multiple references to the [`OccupiedEntry`], see [`OccupiedEntry::get_mut`].
     ///

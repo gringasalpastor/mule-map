@@ -106,8 +106,9 @@ impl NonZeroInt for std::num::NonZeroUsize {
     type UnderlyingType = usize;
 }
 
-/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed keys
-/// in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in the lookup table.
+/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed
+/// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
+/// the lookup table.
 ///
 /// # Differences between [`HashMap`] and [`MuleMap`]
 ///
@@ -116,11 +117,11 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// - **The key, `K`, is passed by value** - Because it is a primitive integer type.
 /// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
 ///     that if you need better performance you will likely also want to use a custom hash function.
-/// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE + TABLE_SIZE`, then
-///     the value will be stored directly in the lookup table, instead of using the `HashMap`.
-///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so `TABLE_MIN_VALUE`
-///     can’t use the same type as the key. Because of this, We are using [`i128`], but that means we can’t
-///     represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+/// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE +
+///     TABLE_SIZE`, then the value will be stored directly in the lookup table, instead of using the `HashMap`.
+///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so
+///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
+///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
 ///
 /// # Performance
 ///
@@ -358,7 +359,9 @@ where
     pub fn hasher(&self) -> &S {
         self.hash_map.hasher()
     }
-    /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map did have this key present, the value is updated, and the old value is returned.
+
+    /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map
+    /// did have this key present, the value is updated, and the old value is returned.
     ///
     /// Analogous to [`HashMap::hasher`]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
@@ -387,8 +390,8 @@ where
         }
     }
 
-    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
-    /// that location.
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
+    /// location.
     ///
     /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
     /// values use [`bump_non_zero`] - It uses the niche optimization for better performance.
@@ -411,8 +414,8 @@ where
         }
     }
 
-    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
-    /// that location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
+    /// location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
     ///
     /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`bump_int`].
     ///
