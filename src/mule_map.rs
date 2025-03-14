@@ -302,7 +302,6 @@ where
     /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
     ///
     /// See [`HashMap::clear`]
-    #[must_use]
     #[inline]
     pub fn clear(&mut self) {
         self.hash_map.clear();
@@ -426,7 +425,7 @@ where
         }
     }
 
-    /// Calls `reserve on the underlying [`HashMap`]
+    /// Calls `reserve` on the underlying [`HashMap`]
     ///
     ///  Analogous to [`HashMap::reserve`]
     #[inline]
