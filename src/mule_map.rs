@@ -401,6 +401,18 @@ where
         self.hash_map.len() + self.table.iter().filter(|&x| x.is_some()).count()
     }
 
+    /// Removes a key from the map, returning the value at the key if the key was previously in the map.
+    ///
+    ///  Analogous to [`HashMap::remove`]
+    #[inline]
+    pub fn remove(&mut self, key: K) -> Option<V> {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].take()
+        } else {
+            self.hash_map.remove(&key)
+        }
+    }
+
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
     #[inline]
