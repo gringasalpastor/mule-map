@@ -342,7 +342,7 @@ where
     #[must_use]
     #[inline]
     pub fn get_key_value(&self, key: K) -> Option<(K, &V)> {
-        let result = None;
+        let result = Some(key);
         result.zip(self.get(key))
     }
 
@@ -410,6 +410,19 @@ where
             self.table[key.key_index()].take()
         } else {
             self.hash_map.remove(&key)
+        }
+    }
+
+    /// Removes a key from the map, returning the stored key and value if the key was previously in the map.
+    ///
+    ///  Analogous to [`HashMap::remove_entry`]
+    #[inline]
+    pub fn remove_entry(&mut self, key: K) -> Option<(K, V)> {
+        if Self::use_lookup_table(key) {
+            let result = Some(key);
+            result.zip(self.table[key.key_index()].take())
+        } else {
+            self.hash_map.remove_entry(&key)
         }
     }
 
