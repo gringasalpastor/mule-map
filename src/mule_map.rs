@@ -426,6 +426,14 @@ where
         }
     }
 
+    /// Calls reserve on the underlying [`HashMap`]
+    ///
+    ///  Analogous to [`HashMap::reserve`]
+    #[inline]
+    pub fn reserve(&mut self, additional: usize) {
+        self.hash_map.reserve(additional);
+    }
+
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
     #[inline]
