@@ -302,6 +302,8 @@ where
     /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
     ///
     /// See [`HashMap::clear`]
+    #[must_use]
+    #[inline]
     pub fn clear(&mut self) {
         self.hash_map.clear();
         self.table.fill(None);
@@ -337,6 +339,8 @@ where
     /// Returns the key-value pair corresponding to the supplied key.
     ///
     /// Analogous to [`HashMap::get_key_value`]
+    #[must_use]
+    #[inline]
     pub fn get_key_value(&self, key: K) -> Option<(K, &V)> {
         let result = None;
         result.zip(self.get(key))
@@ -345,6 +349,8 @@ where
     /// Returns a mutable reference to the value corresponding to the key.
     ///
     /// Analogous to [`HashMap::get_mut`]
+    #[must_use]
+    #[inline]
     pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
         if Self::use_lookup_table(key) {
             self.table[key.key_index()].as_mut()
@@ -356,6 +362,8 @@ where
     /// Returns a reference to the map’s [`BuildHasher`].
     ///
     /// Analogous to [`HashMap::hasher`]
+    #[must_use]
+    #[inline]
     pub fn hasher(&self) -> &S {
         self.hash_map.hasher()
     }
@@ -364,6 +372,7 @@ where
     /// did have this key present, the value is updated, and the old value is returned.
     ///
     /// Analogous to [`HashMap::insert`]
+    #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         if Self::use_lookup_table(key) {
             self.table[key.key_index()].replace(value)
@@ -376,6 +385,8 @@ where
     /// tracking in the lookup table - in the worst case, we have to check all elements of the lookup table.
     ///
     ///  Analogous to [`HashMap::is_empty`]
+    #[must_use]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
     }
@@ -384,6 +395,8 @@ where
     /// tracking in the lookup table, so this will scan the whole table.
     ///
     ///  Analogous to [`HashMap::len`]
+    #[must_use]
+    #[inline]
     pub fn len(&self) -> usize {
         self.hash_map.len() + self.table.iter().filter(|&x| x.is_some()).count()
     }
