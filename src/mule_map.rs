@@ -380,6 +380,14 @@ where
         self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
     }
 
+    /// Returns the number of elements in the map. Checks both the lookup table and the hashmap. Note, there is no
+    /// tracking in the lookup table, so this will scan the whole table.
+    ///
+    ///  Analogous to [`HashMap::len`]
+    pub fn len(&self) -> usize {
+        self.hash_map.len() + self.table.iter().filter(|&x| x.is_some()).count()
+    }
+
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
     #[inline]
