@@ -106,8 +106,9 @@ impl NonZeroInt for std::num::NonZeroUsize {
     type UnderlyingType = usize;
 }
 
-/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed keys
-/// in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in the lookup table.
+/// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed
+/// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
+/// the lookup table.
 ///
 /// # Differences between [`HashMap`] and [`MuleMap`]
 ///
@@ -116,11 +117,11 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// - **The key, `K`, is passed by value** - Because it is a primitive integer type.
 /// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
 ///     that if you need better performance you will likely also want to use a custom hash function.
-/// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE + TABLE_SIZE`, then
-///     the value will be stored directly in the lookup table, instead of using the `HashMap`.
-///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so `TABLE_MIN_VALUE`
-///     can’t use the same type as the key. Because of this, We are using [`i128`], but that means we can’t
-///     represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+/// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE +
+///     TABLE_SIZE`, then the value will be stored directly in the lookup table, instead of using the `HashMap`.
+///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so
+///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
+///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
 ///
 /// # Performance
 ///
@@ -298,6 +299,28 @@ where
         self.hash_map.capacity()
     }
 
+    /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
+    ///
+    /// See [`HashMap::clear`]
+    #[inline]
+    pub fn clear(&mut self) {
+        self.hash_map.clear();
+        self.table.fill(None);
+    }
+
+    /// Returns true if the map contains a value for the specified key.
+    ///
+    /// Analogous to [`HashMap::contains_key`]
+    #[must_use]
+    #[inline]
+    pub fn contains_key(&self, key: K) -> bool {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].is_some()
+        } else {
+            self.hash_map.contains_key(&key)
+        }
+    }
+
     /// Returns a reference to the value corresponding to the key.
     ///
     /// Analogous to [`HashMap::get`]
@@ -312,17 +335,152 @@ where
         }
     }
 
-    /// Returns true if the map contains a value for the specified key.
+    /// Returns the key-value pair corresponding to the supplied key.
     ///
-    /// Analogous to [`HashMap::contains_key`]
+    /// Analogous to [`HashMap::get_key_value`]
     #[must_use]
     #[inline]
-    pub fn contains_key(&self, key: K) -> bool {
+    pub fn get_key_value(&self, key: K) -> Option<(K, &V)> {
+        let result = Some(key);
+        result.zip(self.get(key))
+    }
+
+    /// Returns a mutable reference to the value corresponding to the key.
+    ///
+    /// Analogous to [`HashMap::get_mut`]
+    #[must_use]
+    #[inline]
+    pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
         if Self::use_lookup_table(key) {
-            self.table[key.key_index()].is_some()
+            self.table[key.key_index()].as_mut()
         } else {
-            self.hash_map.contains_key(&key)
+            self.hash_map.get_mut(&key)
         }
+    }
+
+    /// Returns a reference to the map’s [`BuildHasher`].
+    ///
+    /// Analogous to [`HashMap::hasher`]
+    #[must_use]
+    #[inline]
+    pub fn hasher(&self) -> &S {
+        self.hash_map.hasher()
+    }
+
+    /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map
+    /// did have this key present, the value is updated, and the old value is returned.
+    ///
+    /// Analogous to [`HashMap::insert`]
+    #[inline]
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].replace(value)
+        } else {
+            self.hash_map.insert(key, value)
+        }
+    }
+
+    /// Returns true if the map contains no elements. Checks both the lookup table and the hashmap. Note, there is no
+    /// tracking in the lookup table - in the worst case, we have to check all elements of the lookup table.
+    ///
+    ///  Analogous to [`HashMap::is_empty`]
+    #[must_use]
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
+    }
+
+    /// Returns the number of elements in the map. Checks both the lookup table and the hashmap. Note, there is no
+    /// tracking in the lookup table, so this will scan the whole table.
+    ///
+    ///  Analogous to [`HashMap::len`]
+    #[must_use]
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.hash_map.len() + self.table.iter().filter(|&x| x.is_some()).count()
+    }
+
+    /// Removes a key from the map, returning the value at the key if the key was previously in the map.
+    ///
+    ///  Analogous to [`HashMap::remove`]
+    #[inline]
+    pub fn remove(&mut self, key: K) -> Option<V> {
+        if Self::use_lookup_table(key) {
+            self.table[key.key_index()].take()
+        } else {
+            self.hash_map.remove(&key)
+        }
+    }
+
+    /// Removes a key from the map, returning the stored key and value if the key was previously in the map.
+    ///
+    ///  Analogous to [`HashMap::remove_entry`]
+    #[inline]
+    pub fn remove_entry(&mut self, key: K) -> Option<(K, V)> {
+        if Self::use_lookup_table(key) {
+            let result = Some(key);
+            result.zip(self.table[key.key_index()].take())
+        } else {
+            self.hash_map.remove_entry(&key)
+        }
+    }
+
+    /// Calls `reserve` on the underlying [`HashMap`]
+    ///
+    ///  Analogous to [`HashMap::reserve`]
+    #[inline]
+    pub fn reserve(&mut self, additional: usize) {
+        self.hash_map.reserve(additional);
+    }
+
+    // /// Retains only the elements specified by the predicate.
+    // ///
+    // ///  Analogous to [`HashMap::retain`]
+    // pub fn retain<F>(&mut self, mut f: F)
+    // where
+    //     F: FnMut(&K, &mut V) -> bool,
+    // {
+    //     for (index, value) in self.table.iter_mut().enumerate() {
+    //         if let Some(x) = value {
+    //             // NOTE: fix conversion of index to key!!!!
+    //             if !f(&index.as_(), x) {
+    //                 *value = None;
+    //             }
+    //         }
+    //     }
+
+    //     self.hash_map.retain(f);
+    // }
+
+    /// Calls `shrink_to` on the underlying [`HashMap`]
+    ///
+    ///  Analogous to [`HashMap::shrink_to`]
+    #[inline]
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.hash_map.shrink_to(min_capacity);
+    }
+
+    /// Calls `shrink_to_fit` on the underlying [`HashMap`]
+    ///
+    ///  Analogous to [`HashMap::shrink_to_fit`]
+    #[inline]
+    pub fn shrink_to_fit(&mut self) {
+        self.hash_map.shrink_to_fit();
+    }
+
+    /// Calls `try_reserve` on the underlying [`HashMap`]
+    ///
+    /// # Errors
+    ///
+    /// If the capacity overflows, or the allocator reports a failure, then an error is returned.
+    ///
+    ///  Analogous to [`HashMap::try_reserve`]
+    #[inline]
+    pub fn try_reserve(
+        &mut self,
+        additional: usize,
+    ) -> Result<(), std::collections::TryReserveError> {
+        self.hash_map.try_reserve(additional)
     }
 
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
@@ -343,8 +501,8 @@ where
         }
     }
 
-    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
-    /// that location.
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
+    /// location.
     ///
     /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
     /// values use [`bump_non_zero`] - It uses the niche optimization for better performance.
@@ -367,8 +525,8 @@ where
         }
     }
 
-    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at
-    /// that location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
+    /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
+    /// location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
     ///
     /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`bump_int`].
     ///
