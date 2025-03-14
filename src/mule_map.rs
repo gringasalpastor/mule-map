@@ -469,6 +469,21 @@ where
         self.hash_map.shrink_to_fit();
     }
 
+    /// Calls `try_reserve` on the underlying [`HashMap`]
+    ///
+    /// # Errors
+    ///
+    /// If the capacity overflows, or the allocator reports a failure, then an error is returned.
+    ///
+    ///  Analogous to [`HashMap::try_reserve`]
+    #[inline]
+    pub fn try_reserve(
+        &mut self,
+        additional: usize,
+    ) -> Result<(), std::collections::TryReserveError> {
+        self.hash_map.try_reserve(additional)
+    }
+
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
     #[inline]
