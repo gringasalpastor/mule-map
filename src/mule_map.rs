@@ -461,6 +461,14 @@ where
         self.hash_map.shrink_to(min_capacity);
     }
 
+    /// Calls `shrink_to_fit` on the underlying [`HashMap`]
+    ///
+    ///  Analogous to [`HashMap::shrink_to_fit`]
+    #[inline]
+    pub fn shrink_to_fit(&mut self) {
+        self.hash_map.shrink_to_fit();
+    }
+
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
     #[inline]
