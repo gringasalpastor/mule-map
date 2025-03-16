@@ -60,6 +60,7 @@
 //!
 
 pub use crate::mule_map::entry::*;
+pub use crate::mule_map::iterators::*;
 pub use crate::mule_map::*;
 
 mod mule_map;
