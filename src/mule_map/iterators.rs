@@ -44,14 +44,16 @@ where
         type MapFn<'a, K, V> = fn((&'a K, &'a V)) -> (K, &'a V);
         type FilterMap<'a, K, V> = fn(&Option<V>) -> Option<(K, &V)>;
 
-        let h: std::iter::Map<_, MapFn<'a, K, V>> = hash_map
+        let left_iter: std::iter::Map<_, MapFn<'a, K, V>> = hash_map
             .iter()
             .map(map_fn as fn((&'a K, &'a V)) -> (K, &'a V));
-        let x: std::iter::FilterMap<_, FilterMap<'a, K, V>> = table
+        let right_iter: std::iter::FilterMap<_, FilterMap<'a, K, V>> = table
             .iter()
             .filter_map(filter_map_fn as fn(&Option<V>) -> Option<(K, &V)>);
 
-        MuleMapIter { iter: h.chain(x) }
+        MuleMapIter {
+            iter: left_iter.chain(right_iter),
+        }
     }
 }
 
