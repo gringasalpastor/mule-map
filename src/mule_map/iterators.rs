@@ -46,6 +46,18 @@ where
 }
 
 #[inline]
+fn filter_map_fn_into<K, V, const TABLE_MIN_VALUE: i128>(
+    (index, value): (usize, Option<V>),
+) -> Option<(K, V)>
+where
+    usize: AsPrimitive<K>,
+    i128: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+{
+    Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
+}
+
+#[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
     i128: AsPrimitive<K>,
@@ -166,6 +178,57 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
+// MuleMapIntoIter
+
+type IntoIterRightSide<K, V, const TABLE_SIZE: usize> = std::iter::FilterMap<
+    std::iter::Enumerate<std::array::IntoIter<Option<V>, TABLE_SIZE>>,
+    fn((usize, Option<V>)) -> Option<(K, V)>,
+>;
+pub struct MuleMapIntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<
+        std::collections::hash_map::IntoIter<K, V>,
+        IntoIterRightSide<K, V, TABLE_SIZE>,
+    >,
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: HashMap<K, V, S>,
+        table: [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        type FilterMapFn<K, V> = fn((usize, Option<V>)) -> Option<(K, V)>;
+
+        let left_iter: std::collections::hash_map::IntoIter<K, V> = hash_map.into_iter();
+        let right_iter: std::iter::FilterMap<_, FilterMapFn<K, V>> =
+            table.into_iter().enumerate().filter_map(
+                filter_map_fn_into::<K, V, TABLE_MIN_VALUE>
+                    as fn((usize, Option<V>)) -> Option<(K, V)>,
+            );
+
+        MuleMapIntoIter {
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = (K, V);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 // MuleMap
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
@@ -234,6 +297,28 @@ where
     }
 }
 
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: std::hash::BuildHasher,
+    V: PartialEq + Copy,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    type Item = (K, V);
+    type IntoIter = MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
+
+    #[inline]
+    fn into_iter(self) -> MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapIntoIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            self.hash_map,
+            self.table,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,8 +334,8 @@ mod tests {
         assert_eq!(iter.next(), Some((999_999, &1)));
         assert_eq!(iter.next(), Some((10, &2)));
 
-        for x in &mule_map {}
-        for x in &mut mule_map {}
-        // for x in mule_map {}
+        for _ in &mule_map {}
+        for _ in &mut mule_map {}
+        for _ in mule_map {}
     }
 }
