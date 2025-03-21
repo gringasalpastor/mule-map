@@ -58,6 +58,18 @@ where
 }
 
 #[inline]
+fn filter_map_fn_drain<K, V, const TABLE_MIN_VALUE: i128>(
+    (index, value): (usize, &mut Option<V>),
+) -> Option<(K, V)>
+where
+    usize: AsPrimitive<K>,
+    i128: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+{
+    Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
+}
+
+#[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
     i128: AsPrimitive<K>,
@@ -184,6 +196,7 @@ type IntoIterRightSide<K, V, const TABLE_SIZE: usize> = std::iter::FilterMap<
     std::iter::Enumerate<std::array::IntoIter<Option<V>, TABLE_SIZE>>,
     fn((usize, Option<V>)) -> Option<(K, V)>,
 >;
+
 pub struct MuleMapIntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::IntoIter<K, V>,
@@ -229,6 +242,69 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
+// Drain
+
+type DrainIterRightSide<'a, K, V, const TABLE_SIZE: usize> = std::iter::FilterMap<
+    std::iter::Enumerate<std::slice::IterMut<'a, Option<V>>>,
+    fn((usize, &mut Option<V>)) -> Option<(K, V)>,
+>;
+
+pub struct MuleMapDrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<
+        std::collections::hash_map::Drain<'a, K, V>,
+        DrainIterRightSide<'a, K, V, TABLE_SIZE>,
+    >,
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapDrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: &'a mut HashMap<K, V, S>,
+        table: &'a mut [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        type FilterMapFn<K, V> = fn((usize, &mut Option<V>)) -> Option<(K, V)>;
+
+        let left_iter = hash_map.drain();
+
+        let right_iter: std::iter::FilterMap<_, FilterMapFn<K, V>> =
+            table.iter_mut().enumerate().filter_map(
+                filter_map_fn_drain::<K, V, TABLE_MIN_VALUE>
+                    as fn((usize, &mut Option<V>)) -> Option<(K, V)>,
+            );
+        Self {
+            // Note: Can't hold a `&mut` to both table and iter in `MuleMapDrainIter`, but we need to be sure to consume
+            // all of the elements so that the original `MuleMap` is empty after dropped. We could have used an owned
+            // table, but that would have made an extra copy. This could be made more efficient using unsafe.
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Drop
+    for MuleMapDrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    fn drop(&mut self) {
+        for _ in &mut self.iter {}
+    }
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapDrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = (K, V);
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 // MuleMap
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
@@ -252,6 +328,14 @@ where
     #[inline]
     pub fn iter_mut(&mut self) -> MuleMapIterMut<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         MuleMapIterMut::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            &mut self.hash_map,
+            &mut self.table,
+        )
+    }
+
+    #[inline]
+    pub fn drain(&mut self) -> MuleMapDrainIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapDrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
             &mut self.table,
         )
@@ -337,5 +421,14 @@ mod tests {
         for _ in &mule_map {}
         for _ in &mut mule_map {}
         for _ in mule_map {}
+
+        let mut mule_map2 = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+        mule_map2.bump_int(10);
+        mule_map2.bump_int(11);
+        mule_map2.bump_int(999_998);
+        mule_map2.bump_int(999_999);
+
+        for _ in mule_map2.drain().take(1) {}
+        assert_eq!(mule_map2.len(), 0);
     }
 }
