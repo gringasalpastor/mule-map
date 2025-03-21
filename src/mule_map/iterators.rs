@@ -6,19 +6,27 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[inline]
-fn map_fn<'a, K, V>((k, v): (&'a K, &'a V)) -> (K, &'a V)
+fn map_fn<'a, K, V>((key, val): (&'a K, &'a V)) -> (K, &'a V)
 where
     K: Copy,
 {
-    (*k, v)
+    (*key, val)
 }
 
 #[inline]
-fn map_fn_mut<'a, K, V>((k, v): (&'a K, &'a mut V)) -> (K, &'a mut V)
+fn map_fn_mut<'a, K, V>((key, val): (&'a K, &'a mut V)) -> (K, &'a mut V)
 where
     K: Copy,
 {
-    (*k, v)
+    (*key, val)
+}
+
+#[inline]
+fn map_fn_keys<K>(key: &K) -> K
+where
+    K: Copy,
+{
+    *key
 }
 
 #[inline]
@@ -67,6 +75,20 @@ where
     K: Copy + std::ops::Add<Output = K> + 'static,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
+}
+
+#[inline]
+fn filter_map_fn_keys<K, V, const TABLE_MIN_VALUE: i128>(
+    (index, value): (usize, &Option<V>),
+) -> Option<K>
+where
+    usize: AsPrimitive<K>,
+    i128: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+{
+    value
+        .as_ref()
+        .map(|_| key_from_index::<K, TABLE_MIN_VALUE>(index))
 }
 
 #[inline]
@@ -305,6 +327,59 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
+// Keys
+
+type KeysLeftSide<'a, K, V> =
+    std::iter::Map<std::collections::hash_map::Keys<'a, K, V>, fn(&'a K) -> K>;
+
+type KeysRightSide<'a, K, V> = std::iter::FilterMap<
+    std::iter::Enumerate<std::slice::Iter<'a, Option<V>>>,
+    fn((usize, &'a Option<V>)) -> Option<K>,
+>;
+
+pub struct MuleMapKeys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<KeysLeftSide<'a, K, V>, KeysRightSide<'a, K, V>>,
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapKeys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: &'a HashMap<K, V, S>,
+        table: &'a [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        type MapFn<'a, K> = fn(&'a K) -> K;
+        type FilterMapFn<'a, K, V> = fn((usize, &Option<V>)) -> Option<K>;
+
+        let left_iter: std::iter::Map<_, MapFn<'a, K>> =
+            hash_map.keys().map(map_fn_keys as fn(&'a K) -> K);
+        let right_iter: std::iter::FilterMap<_, FilterMapFn<'a, K, V>> =
+            table.iter().enumerate().filter_map(
+                filter_map_fn_keys::<K, V, TABLE_MIN_VALUE> as fn((usize, &Option<V>)) -> Option<K>,
+            );
+
+        MuleMapKeys {
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapKeys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = K;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 // MuleMap
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
@@ -338,6 +413,14 @@ where
         MuleMapDrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
             &mut self.table,
+        )
+    }
+
+    #[inline]
+    pub fn keys(&self) -> MuleMapKeys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapKeys::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            &self.hash_map,
+            &self.table,
         )
     }
 }
@@ -430,5 +513,15 @@ mod tests {
 
         for _ in mule_map2.drain().take(1) {}
         assert_eq!(mule_map2.len(), 0);
+
+        //keys
+        let mut mule_map_keys = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+        mule_map_keys.bump_int(10);
+        mule_map_keys.bump_int(11);
+        mule_map_keys.bump_int(999_998);
+        mule_map_keys.bump_int(999_999);
+        for k in mule_map_keys.keys() {
+            assert!([10, 11, 999_999, 999_998].contains(&k));
+        }
     }
 }
