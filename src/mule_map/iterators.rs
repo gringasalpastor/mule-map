@@ -530,6 +530,59 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
+// IntoValues
+
+type IntoValuesRightSide<V, const TABLE_SIZE: usize> =
+    std::iter::FilterMap<std::array::IntoIter<Option<V>, TABLE_SIZE>, fn(Option<V>) -> Option<V>>;
+
+#[inline]
+fn filter_map_fn_into_values<V, const TABLE_MIN_VALUE: i128>(value: Option<V>) -> Option<V>
+where
+{
+    value
+}
+
+pub struct MuleMapIntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<
+        std::collections::hash_map::IntoValues<K, V>,
+        IntoValuesRightSide<V, TABLE_SIZE>,
+    >,
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: HashMap<K, V, S>,
+        table: [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        let left_iter = hash_map.into_values();
+        let right_iter = table.into_iter().filter_map(
+            filter_map_fn_into_values::<V, TABLE_MIN_VALUE> as fn(Option<V>) -> Option<V>,
+        );
+
+        MuleMapIntoValues {
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 // MuleMap
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
@@ -595,6 +648,14 @@ where
         MuleMapValuesMut::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
             &mut self.table,
+        )
+    }
+
+    #[inline]
+    pub fn into_values(self) -> MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapIntoValues::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            self.hash_map,
+            self.table,
         )
     }
 }
