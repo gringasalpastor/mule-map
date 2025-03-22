@@ -426,6 +426,60 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
+// Values
+
+type ValuesRightSide<'a, V> =
+    std::iter::FilterMap<std::slice::Iter<'a, Option<V>>, fn(&Option<V>) -> Option<&V>>;
+
+#[inline]
+#[allow(clippy::ref_option)]
+fn filter_map_fn_values<K, V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Option<&V>
+where
+    usize: AsPrimitive<K>,
+    i128: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+{
+    value.as_ref()
+}
+
+pub struct MuleMapValues<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<std::collections::hash_map::Values<'a, K, V>, ValuesRightSide<'a, V>>,
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapValues<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: &'a HashMap<K, V, S>,
+        table: &'a [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        let left_iter = hash_map.values();
+        let right_iter = table.iter().filter_map(
+            filter_map_fn_values::<K, V, TABLE_MIN_VALUE> as fn(&Option<V>) -> Option<&V>,
+        );
+
+        MuleMapValues {
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapValues<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
 // MuleMap
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
@@ -474,6 +528,14 @@ where
     pub fn into_keys(self) -> MuleMapIntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         MuleMapIntoKeys::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
+            &self.table,
+        )
+    }
+
+    #[inline]
+    pub fn values(&self) -> MuleMapValues<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapValues::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            &self.hash_map,
             &self.table,
         )
     }
