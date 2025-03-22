@@ -433,12 +433,7 @@ type ValuesRightSide<'a, V> =
 
 #[inline]
 #[allow(clippy::ref_option)]
-fn filter_map_fn_values<K, V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Option<&V>
-where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
-{
+fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Option<&V> {
     value.as_ref()
 }
 
@@ -461,9 +456,9 @@ where
         S: std::hash::BuildHasher,
     {
         let left_iter = hash_map.values();
-        let right_iter = table.iter().filter_map(
-            filter_map_fn_values::<K, V, TABLE_MIN_VALUE> as fn(&Option<V>) -> Option<&V>,
-        );
+        let right_iter = table
+            .iter()
+            .filter_map(filter_map_fn_values::<V, TABLE_MIN_VALUE> as fn(&Option<V>) -> Option<&V>);
 
         MuleMapValues {
             iter: left_iter.chain(right_iter),
@@ -475,6 +470,61 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for MuleMapValues<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+// ValuesMut
+
+type ValuesMutRightSide<'a, V> =
+    std::iter::FilterMap<std::slice::IterMut<'a, Option<V>>, fn(&mut Option<V>) -> Option<&mut V>>;
+
+#[inline]
+fn filter_map_fn_values_mut<V, const TABLE_MIN_VALUE: i128>(
+    value: &mut Option<V>,
+) -> Option<&mut V>
+where
+{
+    value.as_mut()
+}
+
+pub struct MuleMapValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+    iter: std::iter::Chain<
+        std::collections::hash_map::ValuesMut<'a, K, V>,
+        ValuesMutRightSide<'a, V>,
+    >,
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMapValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    usize: AsPrimitive<K>,
+    K: Copy + std::ops::Add<Output = K> + 'static,
+    i128: AsPrimitive<K>,
+{
+    fn from_hash_map_and_table<S>(
+        hash_map: &'a mut HashMap<K, V, S>,
+        table: &'a mut [Option<V>; TABLE_SIZE],
+    ) -> Self
+    where
+        S: std::hash::BuildHasher,
+    {
+        let left_iter = hash_map.values_mut();
+        let right_iter = table.iter_mut().filter_map(
+            filter_map_fn_values_mut::<V, TABLE_MIN_VALUE> as fn(&mut Option<V>) -> Option<&mut V>,
+        );
+
+        MuleMapValuesMut {
+            iter: left_iter.chain(right_iter),
+        }
+    }
+}
+
+impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
+    for MuleMapValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+{
+    type Item = &'a mut V;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
@@ -537,6 +587,14 @@ where
         MuleMapValues::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
             &self.table,
+        )
+    }
+
+    #[inline]
+    pub fn values_mut(&mut self) -> MuleMapValuesMut<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        MuleMapValuesMut::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+            &mut self.hash_map,
+            &mut self.table,
         )
     }
 }
