@@ -251,7 +251,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
 }
 
-pub struct MuleMapDrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct DrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::Drain<'a, K, V>,
         DrainIterRightSide<'a, K, V, TABLE_SIZE>,
@@ -259,7 +259,7 @@ pub struct MuleMapDrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_S
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapDrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    DrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -291,7 +291,7 @@ where
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Drop
-    for MuleMapDrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for DrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     fn drop(&mut self) {
         for _ in &mut self.iter {}
@@ -299,7 +299,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Drop
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapDrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for DrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
@@ -613,8 +613,8 @@ where
     }
 
     #[inline]
-    pub fn drain(&mut self) -> MuleMapDrainIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapDrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn drain(&mut self) -> DrainIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        DrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
             &mut self.table,
         )
