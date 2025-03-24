@@ -384,12 +384,12 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
 
 // IntoKeys
 
-pub struct MuleMapIntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct IntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::IntoKeys<K, V>, std::vec::IntoIter<K>>,
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapIntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -412,14 +412,14 @@ where
             )
             .collect();
 
-        MuleMapIntoKeys {
+        IntoKeys {
             iter: left_iter.chain(table_keys),
         }
     }
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapIntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = K;
     fn next(&mut self) -> Option<Self::Item> {
@@ -629,8 +629,8 @@ where
     }
 
     #[inline]
-    pub fn into_keys(self) -> MuleMapIntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapIntoKeys::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn into_keys(self) -> IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        IntoKeys::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
             &self.table,
         )
