@@ -658,6 +658,24 @@ where
             self.table,
         )
     }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    ///  Analogous to [`HashMap::retain`]
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        for (index, value) in self.table.iter_mut().enumerate() {
+            if let Some(x) = value {
+                if !f(&key_from_index::<K, TABLE_MIN_VALUE>(index), x) {
+                    *value = None;
+                }
+            }
+        }
+
+        self.hash_map.retain(f);
+    }
 }
 
 // IntoIterator

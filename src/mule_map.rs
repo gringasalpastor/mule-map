@@ -433,25 +433,6 @@ where
         self.hash_map.reserve(additional);
     }
 
-    // /// Retains only the elements specified by the predicate.
-    // ///
-    // ///  Analogous to [`HashMap::retain`]
-    // pub fn retain<F>(&mut self, mut f: F)
-    // where
-    //     F: FnMut(&K, &mut V) -> bool,
-    // {
-    //     for (index, value) in self.table.iter_mut().enumerate() {
-    //         if let Some(x) = value {
-    //             // NOTE: fix conversion of index to key!!!!
-    //             if !f(&index.as_(), x) {
-    //                 *value = None;
-    //             }
-    //         }
-    //     }
-
-    //     self.hash_map.retain(f);
-    // }
-
     /// Calls `shrink_to` on the underlying [`HashMap`]
     ///
     ///  Analogous to [`HashMap::shrink_to`]
