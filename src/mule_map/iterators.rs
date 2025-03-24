@@ -89,6 +89,11 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 // MuleMapIterMut
@@ -167,6 +172,11 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 // MuleMapIntoIter
@@ -231,6 +241,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -308,6 +323,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 // Keys
@@ -384,6 +404,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 // IntoKeys
@@ -429,6 +454,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     type Item = K;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -479,6 +509,11 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     type Item = &'a V;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -536,6 +571,11 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 // IntoValues
@@ -589,6 +629,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     type Item = V;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
