@@ -438,12 +438,12 @@ fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Op
     value.as_ref()
 }
 
-pub struct MuleMapValues<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::Values<'a, K, V>, ValuesRightSide<'a, V>>,
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapValues<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -461,14 +461,14 @@ where
             .iter()
             .filter_map(filter_map_fn_values::<V, TABLE_MIN_VALUE> as fn(&Option<V>) -> Option<&V>);
 
-        MuleMapValues {
+        Values {
             iter: left_iter.chain(right_iter),
         }
     }
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapValues<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = &'a V;
     fn next(&mut self) -> Option<Self::Item> {
@@ -637,8 +637,8 @@ where
     }
 
     #[inline]
-    pub fn values(&self) -> MuleMapValues<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapValues::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn values(&self) -> Values<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        Values::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
             &self.table,
         )
