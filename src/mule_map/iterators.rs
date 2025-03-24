@@ -339,12 +339,12 @@ where
         .map(|_| key_from_index::<K, TABLE_MIN_VALUE>(index))
 }
 
-pub struct MuleMapKeys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<KeysLeftSide<'a, K, V>, KeysRightSide<'a, K, V>>,
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapKeys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    Keys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -367,14 +367,14 @@ where
                 filter_map_fn_keys::<K, V, TABLE_MIN_VALUE> as fn((usize, &Option<V>)) -> Option<K>,
             );
 
-        MuleMapKeys {
+        Keys {
             iter: left_iter.chain(right_iter),
         }
     }
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapKeys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for Keys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = K;
     fn next(&mut self) -> Option<Self::Item> {
@@ -621,8 +621,8 @@ where
     }
 
     #[inline]
-    pub fn keys(&self) -> MuleMapKeys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapKeys::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn keys(&self) -> Keys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        Keys::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
             &self.table,
         )
