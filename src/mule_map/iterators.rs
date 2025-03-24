@@ -187,7 +187,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
 }
 
-pub struct MuleMapIntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct IntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::IntoIter<K, V>,
         IntoIterRightSide<K, V, TABLE_SIZE>,
@@ -195,7 +195,7 @@ pub struct MuleMapIntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: 
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -217,14 +217,14 @@ where
                     as fn((usize, Option<V>)) -> Option<(K, V)>,
             );
 
-        MuleMapIntoIter {
+        IntoIter {
             iter: left_iter.chain(right_iter),
         }
     }
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
@@ -729,11 +729,11 @@ where
     <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, V);
-    type IntoIter = MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
+    type IntoIter = IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
 
     #[inline]
-    fn into_iter(self) -> MuleMapIntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapIntoIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    fn into_iter(self) -> IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        IntoIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
             self.table,
         )
