@@ -45,7 +45,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_ref())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Iter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<IterLeftSide<'a, K, V>, IterRightSide<'a, K, V>>,
 }
@@ -362,7 +362,7 @@ where
         .map(|_| key_from_index::<K, TABLE_MIN_VALUE>(index))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<KeysLeftSide<'a, K, V>, KeysRightSide<'a, K, V>>,
 }
@@ -473,7 +473,7 @@ fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Op
     value.as_ref()
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::Values<'a, K, V>, ValuesRightSide<'a, V>>,
 }
