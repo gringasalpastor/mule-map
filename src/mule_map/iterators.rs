@@ -123,6 +123,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_mut())
 }
 
+#[derive(Debug)]
 pub struct IterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<IterMutLeftSide<'a, K, V>, IterMutRightSide<'a, K, V>>,
 }
@@ -187,6 +188,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
 }
 
+#[derive(Debug)]
 pub struct IntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::IntoIter<K, V>,
@@ -251,6 +253,7 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
 }
 
+#[derive(Debug)]
 pub struct DrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::Drain<'a, K, V>,
@@ -339,6 +342,7 @@ where
         .map(|_| key_from_index::<K, TABLE_MIN_VALUE>(index))
 }
 
+#[derive(Debug)]
 pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<KeysLeftSide<'a, K, V>, KeysRightSide<'a, K, V>>,
 }
@@ -384,6 +388,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
 
 // IntoKeys
 
+#[derive(Debug)]
 pub struct IntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::IntoKeys<K, V>, std::vec::IntoIter<K>>,
 }
@@ -438,6 +443,7 @@ fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Op
     value.as_ref()
 }
 
+#[derive(Debug)]
 pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::Values<'a, K, V>, ValuesRightSide<'a, V>>,
 }
@@ -490,6 +496,7 @@ where
     value.as_mut()
 }
 
+#[derive(Debug)]
 pub struct ValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::ValuesMut<'a, K, V>,
@@ -543,6 +550,7 @@ where
     value
 }
 
+#[derive(Debug)]
 pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::IntoValues<K, V>,
