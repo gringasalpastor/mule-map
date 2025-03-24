@@ -153,7 +153,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 // assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
 // assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MuleMap<
     K,
     V,
