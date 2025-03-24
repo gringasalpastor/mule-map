@@ -543,7 +543,7 @@ where
     value
 }
 
-pub struct MuleMapIntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
         std::collections::hash_map::IntoValues<K, V>,
         IntoValuesRightSide<V, TABLE_SIZE>,
@@ -551,7 +551,7 @@ pub struct MuleMapIntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -569,14 +569,14 @@ where
             filter_map_fn_into_values::<V, TABLE_MIN_VALUE> as fn(Option<V>) -> Option<V>,
         );
 
-        MuleMapIntoValues {
+        IntoValues {
             iter: left_iter.chain(right_iter),
         }
     }
 }
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = V;
     fn next(&mut self) -> Option<Self::Item> {
@@ -653,8 +653,8 @@ where
     }
 
     #[inline]
-    pub fn into_values(self) -> MuleMapIntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapIntoValues::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn into_values(self) -> IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        IntoValues::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
             self.table,
         )
