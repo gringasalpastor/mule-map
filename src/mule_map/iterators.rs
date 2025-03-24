@@ -123,12 +123,12 @@ where
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_mut())
 }
 
-pub struct MuleMapIterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
+pub struct IterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<IterMutLeftSide<'a, K, V>, IterMutRightSide<'a, K, V>>,
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMapIterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
     K: Copy + std::ops::Add<Output = K> + 'static,
@@ -153,14 +153,14 @@ where
                     as fn((usize, &mut Option<V>)) -> Option<(K, &mut V)>,
             );
 
-        MuleMapIterMut {
+        IterMut {
             iter: left_iter.chain(right_iter),
         }
     }
 }
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
-    for MuleMapIterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+    for IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, &'a mut V);
     fn next(&mut self) -> Option<Self::Item> {
@@ -605,8 +605,8 @@ where
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> MuleMapIterMut<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
-        MuleMapIterMut::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
+    pub fn iter_mut(&mut self) -> IterMut<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+        IterMut::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
             &mut self.table,
         )
@@ -710,10 +710,10 @@ where
     <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, &'a mut V);
-    type IntoIter = MuleMapIterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
+    type IntoIter = IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
 
     #[inline]
-    fn into_iter(self) -> MuleMapIterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
+    fn into_iter(self) -> IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         self.iter_mut()
     }
 }
