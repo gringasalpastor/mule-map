@@ -267,6 +267,29 @@ where
     }
 }
 
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize, const N: usize>
+    From<[(K, V); N]> for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher + Default,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    /// Converts a `[(K, V); N]` into a `MuleMap<K, V>`.
+    ///
+    /// If any entries in the array have equal keys,
+    /// all but one of the corresponding values will be dropped.
+    ///
+    fn from(arr: [(K, V); N]) -> Self {
+        let mut map = Self::default();
+        for (key, val) in arr {
+            map.insert(key, val);
+        }
+        map
+    }
+}
+
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
