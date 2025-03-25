@@ -211,6 +211,29 @@ where
 {
 }
 
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::Index<K>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + std::hash::BuildHasher,
+    V: PartialEq + Copy,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    type Output = V;
+
+    /// Returns a reference to the value corresponding to the supplied key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is not present in the `MuleMap`.
+    #[inline]
+    fn index(&self, key: K) -> &V {
+        self.get(key).expect("No entry found for key")
+    }
+}
+
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
