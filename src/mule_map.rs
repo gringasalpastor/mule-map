@@ -190,6 +190,27 @@ where
     }
 }
 
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> PartialEq
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: Eq + std::hash::Hash,
+    V: PartialEq,
+    S: std::hash::BuildHasher,
+{
+    fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
+        self.hash_map == other.hash_map && self.table == other.table
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Eq
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: Eq + std::hash::Hash,
+    V: Eq,
+    S: std::hash::BuildHasher,
+{
+}
+
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where

@@ -96,8 +96,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
-impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
-    for Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
+    for Iter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
 }
 
@@ -184,8 +184,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
-impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
-    for IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
+    for IterMut<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
 }
 
@@ -547,8 +547,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
-impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
-    for Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
+    for Values<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
 }
 
@@ -613,8 +613,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     }
 }
 
-impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
-    for ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
+impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::FusedIterator
+    for ValuesMut<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
 }
 
