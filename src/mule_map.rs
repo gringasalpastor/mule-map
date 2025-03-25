@@ -8,10 +8,13 @@ use num_traits::PrimInt;
 use sealed::sealed;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::BuildHasher;
+use std::hash::Hash;
 use std::num::NonZero;
+use std::ops::AddAssign;
 
 pub(crate) mod entry;
-mod iterators;
+pub(crate) mod iterators;
 mod key_index;
 
 #[sealed]
@@ -23,7 +26,7 @@ pub trait NonZeroInt {
     fn checked_add(self, other: Self::UnderlyingType) -> Option<Self>
     where
         Self::UnderlyingType: bytemuck::Pod,
-        Self::UnderlyingType: std::ops::AddAssign<Self::UnderlyingType>,
+        Self::UnderlyingType: AddAssign<Self::UnderlyingType>,
         Self: bytemuck::PodInOption,
         Self::UnderlyingType: PrimInt,
     {
@@ -110,7 +113,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
 /// the lookup table.
 ///
-/// # Differences between [`HashMap`] and [`MuleMap`]
+/// ## Differences between [`HashMap`] and [`MuleMap`]
 ///
 /// - **The key, `K`, must be an integer type.** - The key is directly mapped to the index in the lookup, so it must be
 ///     an integer.
@@ -123,7 +126,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 ///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
 ///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
 ///
-/// # Performance
+/// ## Performance
 ///
 /// Benchmarks (using random selection) start to show speed improvements when about 50% of the key accesses are in the
 /// lookup table. Performance is almost identical to `HashMap` with less than 50%.
@@ -153,7 +156,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 // assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
 // assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MuleMap<
     K,
     V,
@@ -168,9 +171,8 @@ pub struct MuleMap<
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Default
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
-    V: PartialEq + Copy,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
@@ -190,15 +192,131 @@ where
     }
 }
 
-impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
-    MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> PartialEq
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
-    V: PartialEq + Copy,
+    K: Eq + Hash,
+    V: PartialEq,
+    S: BuildHasher,
+{
+    fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
+        self.hash_map == other.hash_map && self.table == other.table
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Eq
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: Eq + Hash,
+    V: Eq,
+    S: BuildHasher,
+{
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::Index<K>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+{
+    type Output = V;
+
+    /// Returns a reference to the value corresponding to the supplied key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is not present in the `MuleMap`.
+    #[inline]
+    fn index(&self, key: K) -> &V {
+        self.get(key).expect("No entry found for key")
+    }
+}
+
+impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, &'a V)>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + BuildHasher,
+    V: Copy,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+{
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K, &'a V)>>(&mut self, iter: T) {
+        for (key, val) in iter {
+            self.insert(key, *val);
+        }
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+{
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        for (key, val) in iter {
+            self.insert(key, val);
+        }
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize, const N: usize>
+    From<[(K, V); N]> for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher + Default,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
+{
+    /// Converts a `[(K, V); N]` into a `MuleMap<K, V>`.
+    ///
+    /// If any entries in the array have equal keys,
+    /// all but one of the corresponding values will be dropped.
+    ///
+    fn from(arr: [(K, V); N]) -> Self {
+        let mut map = Self::default();
+        for (key, val) in arr {
+            map.insert(key, val);
+        }
+        map
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> FromIterator<(K, V)>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher + Default,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    /// Constructs a `MuleMap<K, V>` from an iterator of key-value pairs.
+    ///
+    /// If the iterator produces any pairs with equal keys,
+    /// all but one of the corresponding values will be dropped.
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let mut map = Self::default();
+        map.extend(iter);
+        map
+    }
+}
+
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
+    MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
 {
     // Hard limit, way beyond practical lookup table size. This makes it easier to calculate the key index
     const STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX: () =
@@ -223,7 +341,11 @@ where
     /// Analogous to [`HashMap::new`]
     #[must_use]
     #[inline]
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    where
+        S: Default,
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         Self::with_capacity_and_hasher(0, S::default())
     }
 
@@ -239,7 +361,11 @@ where
     /// Analogous to [`HashMap::with_capacity`]
     #[must_use]
     #[inline]
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self
+    where
+        S: Default,
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         Self::with_capacity_and_hasher(capacity, S::default())
     }
 
@@ -256,7 +382,10 @@ where
     /// Analogous to [`HashMap::with_hasher`]
     #[must_use]
     #[inline]
-    pub fn with_hasher(hash_builder: S) -> Self {
+    pub fn with_hasher(hash_builder: S) -> Self
+    where
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         Self::with_capacity_and_hasher(0, hash_builder)
     }
 
@@ -276,7 +405,10 @@ where
     /// Analogous to [`HashMap::with_capacity_and_hasher`]
     #[must_use]
     #[inline]
-    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
+    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self
+    where
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         let () = Self::STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX;
 
         <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE + TABLE_SIZE as i128)
@@ -286,7 +418,7 @@ where
 
         MuleMap::<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE> {
             hash_map: HashMap::with_capacity_and_hasher(capacity, hash_builder),
-            table: [None; TABLE_SIZE],
+            table: [const { None }; TABLE_SIZE],
         }
     }
 
@@ -305,7 +437,7 @@ where
     #[inline]
     pub fn clear(&mut self) {
         self.hash_map.clear();
-        self.table.fill(None);
+        self.table = [const { None }; TABLE_SIZE];
     }
 
     /// Returns true if the map contains a value for the specified key.
@@ -387,7 +519,7 @@ where
     #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
+        self.hash_map.is_empty() && !self.table.iter().any(Option::is_some)
     }
 
     /// Returns the number of elements in the map. Checks both the lookup table and the hashmap. Note, there is no
@@ -432,25 +564,6 @@ where
     pub fn reserve(&mut self, additional: usize) {
         self.hash_map.reserve(additional);
     }
-
-    // /// Retains only the elements specified by the predicate.
-    // ///
-    // ///  Analogous to [`HashMap::retain`]
-    // pub fn retain<F>(&mut self, mut f: F)
-    // where
-    //     F: FnMut(&K, &mut V) -> bool,
-    // {
-    //     for (index, value) in self.table.iter_mut().enumerate() {
-    //         if let Some(x) = value {
-    //             // NOTE: fix conversion of index to key!!!!
-    //             if !f(&index.as_(), x) {
-    //                 *value = None;
-    //             }
-    //         }
-    //     }
-
-    //     self.hash_map.retain(f);
-    // }
 
     /// Calls `shrink_to` on the underlying [`HashMap`]
     ///
@@ -505,7 +618,7 @@ where
     /// location.
     ///
     /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
-    /// values use [`bump_non_zero`] - It uses the niche optimization for better performance.
+    /// values use [`MuleMap::bump_non_zero`] - It uses the niche optimization for better performance.
     ///
     /// # Panics
     ///
@@ -513,7 +626,7 @@ where
     #[inline]
     pub fn bump_int(&mut self, key: K)
     where
-        V: std::ops::AddAssign<V> + num_traits::One + num_traits::Zero,
+        V: AddAssign<V> + num_traits::One + num_traits::Zero,
     {
         if Self::use_lookup_table(key) {
             *self.table[key.key_index()].get_or_insert(V::zero()) += V::one();
@@ -528,7 +641,7 @@ where
     /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
     /// location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
     ///
-    /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`bump_int`].
+    /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`MuleMap::bump_int`].
     ///
     /// # Panics
     ///
@@ -537,7 +650,7 @@ where
     pub fn bump_non_zero(&mut self, key: K)
     where
         V: NonZeroInt + bytemuck::PodInOption,
-        <V as NonZeroInt>::UnderlyingType: std::ops::AddAssign<V::UnderlyingType>,
+        <V as NonZeroInt>::UnderlyingType: AddAssign<V::UnderlyingType>,
         <V as NonZeroInt>::UnderlyingType: bytemuck::Pod + PrimInt,
     {
         use num_traits::One;

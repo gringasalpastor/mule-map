@@ -21,23 +21,23 @@ pub enum VacantEntry<'a, K: 'a, V: 'a> {
     Vec(VacantVecEntry<'a, K, V>),
 }
 
-#[doc(hidden)]
+#[derive(Debug)]
 pub struct OccupiedHashMapEntry<'a, K: 'a, V: 'a> {
     pub(crate) base: std::collections::hash_map::OccupiedEntry<'a, K, V>,
 }
 
-#[doc(hidden)]
+#[derive(Debug)]
 pub struct OccupiedVecEntry<'a, K: 'a, V: 'a> {
     pub(crate) value: &'a mut Option<V>,
     pub(crate) key: K,
 }
 
-#[doc(hidden)]
+#[derive(Debug)]
 pub struct VacantHashMapEntry<'a, K: 'a, V: 'a> {
     pub(crate) base: std::collections::hash_map::VacantEntry<'a, K, V>,
 }
 
-#[doc(hidden)]
+#[derive(Debug)]
 pub struct VacantVecEntry<'a, K: 'a, V: 'a> {
     pub(crate) value: &'a mut Option<V>,
     pub(crate) key: K,
