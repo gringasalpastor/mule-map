@@ -110,7 +110,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
 /// the lookup table.
 ///
-/// # Differences between [`HashMap`] and [`MuleMap`]
+/// ## Differences between [`HashMap`] and [`MuleMap`]
 ///
 /// - **The key, `K`, must be an integer type.** - The key is directly mapped to the index in the lookup, so it must be
 ///     an integer.
@@ -123,7 +123,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 ///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
 ///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
 ///
-/// # Performance
+/// ## Performance
 ///
 /// Benchmarks (using random selection) start to show speed improvements when about 50% of the key accesses are in the
 /// lookup table. Performance is almost identical to `HashMap` with less than 50%.
