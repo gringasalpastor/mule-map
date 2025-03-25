@@ -217,7 +217,6 @@ where
     S: std::hash::BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Output = V;
 
@@ -240,7 +239,6 @@ where
     V: Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     #[inline]
     fn extend<T: IntoIterator<Item = (K, &'a V)>>(&mut self, iter: T) {
@@ -257,7 +255,6 @@ where
     S: std::hash::BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     #[inline]
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
@@ -274,7 +271,6 @@ where
     S: std::hash::BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     // Hard limit, way beyond practical lookup table size. This makes it easier to calculate the key index
     const STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX: () =
@@ -302,6 +298,7 @@ where
     pub fn new() -> Self
     where
         S: Default,
+        <K as TryFrom<i128>>::Error: Debug,
     {
         Self::with_capacity_and_hasher(0, S::default())
     }
@@ -321,6 +318,7 @@ where
     pub fn with_capacity(capacity: usize) -> Self
     where
         S: Default,
+        <K as TryFrom<i128>>::Error: Debug,
     {
         Self::with_capacity_and_hasher(capacity, S::default())
     }
@@ -338,7 +336,10 @@ where
     /// Analogous to [`HashMap::with_hasher`]
     #[must_use]
     #[inline]
-    pub fn with_hasher(hash_builder: S) -> Self {
+    pub fn with_hasher(hash_builder: S) -> Self
+    where
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         Self::with_capacity_and_hasher(0, hash_builder)
     }
 
@@ -358,7 +359,10 @@ where
     /// Analogous to [`HashMap::with_capacity_and_hasher`]
     #[must_use]
     #[inline]
-    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self {
+    pub fn with_capacity_and_hasher(capacity: usize, hash_builder: S) -> Self
+    where
+        <K as TryFrom<i128>>::Error: Debug,
+    {
         let () = Self::STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX;
 
         <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE + TABLE_SIZE as i128)
