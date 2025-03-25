@@ -250,7 +250,7 @@ where
     }
 }
 
-impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
+impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
