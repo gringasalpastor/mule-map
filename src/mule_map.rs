@@ -8,7 +8,10 @@ use num_traits::PrimInt;
 use sealed::sealed;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::BuildHasher;
+use std::hash::Hash;
 use std::num::NonZero;
+use std::ops::AddAssign;
 
 pub(crate) mod entry;
 pub(crate) mod iterators;
@@ -23,7 +26,7 @@ pub trait NonZeroInt {
     fn checked_add(self, other: Self::UnderlyingType) -> Option<Self>
     where
         Self::UnderlyingType: bytemuck::Pod,
-        Self::UnderlyingType: std::ops::AddAssign<Self::UnderlyingType>,
+        Self::UnderlyingType: AddAssign<Self::UnderlyingType>,
         Self: bytemuck::PodInOption,
         Self::UnderlyingType: PrimInt,
     {
@@ -168,8 +171,8 @@ pub struct MuleMap<
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Default
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
@@ -192,9 +195,9 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> PartialEq
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + Hash,
     V: PartialEq,
-    S: std::hash::BuildHasher,
+    S: BuildHasher,
 {
     fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
         self.hash_map == other.hash_map && self.table == other.table
@@ -204,17 +207,17 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Eq
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: Eq + std::hash::Hash,
+    K: Eq + Hash,
     V: Eq,
-    S: std::hash::BuildHasher,
+    S: BuildHasher,
 {
 }
 
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::Index<K>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
@@ -234,8 +237,8 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, &'a V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + BuildHasher,
     V: Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -251,8 +254,8 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
@@ -267,8 +270,8 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
@@ -572,7 +575,7 @@ where
     /// location.
     ///
     /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
-    /// values use [`bump_non_zero`] - It uses the niche optimization for better performance.
+    /// values use [`MuleMap::bump_non_zero`] - It uses the niche optimization for better performance.
     ///
     /// # Panics
     ///
@@ -580,7 +583,7 @@ where
     #[inline]
     pub fn bump_int(&mut self, key: K)
     where
-        V: std::ops::AddAssign<V> + num_traits::One + num_traits::Zero,
+        V: AddAssign<V> + num_traits::One + num_traits::Zero,
     {
         if Self::use_lookup_table(key) {
             *self.table[key.key_index()].get_or_insert(V::zero()) += V::one();
@@ -595,7 +598,7 @@ where
     /// Adds 1 to the value stored at location `key`. If the value is not present, the value 1 will be set at that
     /// location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
     ///
-    /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`bump_int`].
+    /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`MuleMap::bump_int`].
     ///
     /// # Panics
     ///
@@ -604,7 +607,7 @@ where
     pub fn bump_non_zero(&mut self, key: K)
     where
         V: NonZeroInt + bytemuck::PodInOption,
-        <V as NonZeroInt>::UnderlyingType: std::ops::AddAssign<V::UnderlyingType>,
+        <V as NonZeroInt>::UnderlyingType: AddAssign<V::UnderlyingType>,
         <V as NonZeroInt>::UnderlyingType: bytemuck::Pod + PrimInt,
     {
         use num_traits::One;

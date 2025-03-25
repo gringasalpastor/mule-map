@@ -4,13 +4,18 @@ use num_traits::AsPrimitive;
 use num_traits::PrimInt;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::BuildHasher;
+use std::hash::Hash;
+use std::iter::Enumerate;
+use std::iter::FilterMap;
+use std::ops::Add;
 
 #[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     TABLE_MIN_VALUE.as_() + index.as_()
 }
@@ -20,8 +25,8 @@ where
 type IterLeftSide<'a, K, V> =
     std::iter::Map<std::collections::hash_map::Iter<'a, K, V>, fn((&'a K, &'a V)) -> (K, &'a V)>;
 
-type IterRightSide<'a, K, V> = std::iter::FilterMap<
-    std::iter::Enumerate<std::slice::Iter<'a, Option<V>>>,
+type IterRightSide<'a, K, V> = FilterMap<
+    Enumerate<std::slice::Iter<'a, Option<V>>>,
     fn((usize, &'a Option<V>)) -> Option<(K, &'a V)>,
 >;
 
@@ -40,7 +45,7 @@ fn filter_map_fn<K, V, const TABLE_MIN_VALUE: i128>(
 where
     usize: AsPrimitive<K>,
     i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_ref())
 }
@@ -54,7 +59,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -62,7 +67,7 @@ where
         table: &'a [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         type MapFn<'a, K, V> = fn((&'a K, &'a V)) -> (K, &'a V);
         type FilterMapFn<'a, K, V> = fn((usize, &Option<V>)) -> Option<(K, &V)>;
@@ -70,11 +75,9 @@ where
         let left_iter: std::iter::Map<_, MapFn<'a, K, V>> = hash_map
             .iter()
             .map(map_fn as fn((&'a K, &'a V)) -> (K, &'a V));
-        let right_iter: std::iter::FilterMap<_, FilterMapFn<'a, K, V>> =
-            table.iter().enumerate().filter_map(
-                filter_map_fn::<K, V, TABLE_MIN_VALUE>
-                    as fn((usize, &Option<V>)) -> Option<(K, &V)>,
-            );
+        let right_iter: FilterMap<_, FilterMapFn<'a, K, V>> = table.iter().enumerate().filter_map(
+            filter_map_fn::<K, V, TABLE_MIN_VALUE> as fn((usize, &Option<V>)) -> Option<(K, &V)>,
+        );
 
         Iter {
             iter: left_iter.chain(right_iter),
@@ -108,8 +111,8 @@ type IterMutLeftSide<'a, K, V> = std::iter::Map<
     fn((&'a K, &'a mut V)) -> (K, &'a mut V),
 >;
 
-type IterMutRightSide<'a, K, V> = std::iter::FilterMap<
-    std::iter::Enumerate<std::slice::IterMut<'a, Option<V>>>,
+type IterMutRightSide<'a, K, V> = FilterMap<
+    Enumerate<std::slice::IterMut<'a, Option<V>>>,
     fn((usize, &'a mut Option<V>)) -> Option<(K, &'a mut V)>,
 >;
 
@@ -128,7 +131,7 @@ fn filter_map_fn_mut<K, V, const TABLE_MIN_VALUE: i128>(
 where
     usize: AsPrimitive<K>,
     i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_mut())
 }
@@ -142,7 +145,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -150,7 +153,7 @@ where
         table: &'a mut [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         type MapFn<'a, K, V> = fn((&'a K, &'a mut V)) -> (K, &'a mut V);
         type FilterMapFn<'a, K, V> = fn((usize, &mut Option<V>)) -> Option<(K, &mut V)>;
@@ -158,7 +161,7 @@ where
         let left_iter: std::iter::Map<_, MapFn<'a, K, V>> = hash_map
             .iter_mut()
             .map(map_fn_mut as fn((&'a K, &'a mut V)) -> (K, &'a mut V));
-        let right_iter: std::iter::FilterMap<_, FilterMapFn<'a, K, V>> =
+        let right_iter: FilterMap<_, FilterMapFn<'a, K, V>> =
             table.iter_mut().enumerate().filter_map(
                 filter_map_fn_mut::<K, V, TABLE_MIN_VALUE>
                     as fn((usize, &mut Option<V>)) -> Option<(K, &mut V)>,
@@ -191,8 +194,8 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 
 // MuleMapIntoIter
 
-type IntoIterRightSide<K, V, const TABLE_SIZE: usize> = std::iter::FilterMap<
-    std::iter::Enumerate<std::array::IntoIter<Option<V>, TABLE_SIZE>>,
+type IntoIterRightSide<K, V, const TABLE_SIZE: usize> = FilterMap<
+    Enumerate<std::array::IntoIter<Option<V>, TABLE_SIZE>>,
     fn((usize, Option<V>)) -> Option<(K, V)>,
 >;
 
@@ -203,7 +206,7 @@ fn filter_map_fn_into<K, V, const TABLE_MIN_VALUE: i128>(
 where
     usize: AsPrimitive<K>,
     i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
 }
@@ -220,7 +223,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -228,16 +231,14 @@ where
         table: [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         type FilterMapFn<K, V> = fn((usize, Option<V>)) -> Option<(K, V)>;
 
         let left_iter: std::collections::hash_map::IntoIter<K, V> = hash_map.into_iter();
-        let right_iter: std::iter::FilterMap<_, FilterMapFn<K, V>> =
-            table.into_iter().enumerate().filter_map(
-                filter_map_fn_into::<K, V, TABLE_MIN_VALUE>
-                    as fn((usize, Option<V>)) -> Option<(K, V)>,
-            );
+        let right_iter: FilterMap<_, FilterMapFn<K, V>> = table.into_iter().enumerate().filter_map(
+            filter_map_fn_into::<K, V, TABLE_MIN_VALUE> as fn((usize, Option<V>)) -> Option<(K, V)>,
+        );
 
         IntoIter {
             iter: left_iter.chain(right_iter),
@@ -266,8 +267,8 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 
 // Drain
 
-type DrainIterRightSide<'a, K, V, const TABLE_SIZE: usize> = std::iter::FilterMap<
-    std::iter::Enumerate<std::slice::IterMut<'a, Option<V>>>,
+type DrainIterRightSide<'a, K, V, const TABLE_SIZE: usize> = FilterMap<
+    Enumerate<std::slice::IterMut<'a, Option<V>>>,
     fn((usize, &mut Option<V>)) -> Option<(K, V)>,
 >;
 
@@ -278,7 +279,7 @@ fn filter_map_fn_drain<K, V, const TABLE_MIN_VALUE: i128>(
 where
     usize: AsPrimitive<K>,
     i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
 }
@@ -295,7 +296,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     DrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -303,17 +304,16 @@ where
         table: &'a mut [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         type FilterMapFn<K, V> = fn((usize, &mut Option<V>)) -> Option<(K, V)>;
 
         let left_iter = hash_map.drain();
 
-        let right_iter: std::iter::FilterMap<_, FilterMapFn<K, V>> =
-            table.iter_mut().enumerate().filter_map(
-                filter_map_fn_drain::<K, V, TABLE_MIN_VALUE>
-                    as fn((usize, &mut Option<V>)) -> Option<(K, V)>,
-            );
+        let right_iter: FilterMap<_, FilterMapFn<K, V>> = table.iter_mut().enumerate().filter_map(
+            filter_map_fn_drain::<K, V, TABLE_MIN_VALUE>
+                as fn((usize, &mut Option<V>)) -> Option<(K, V)>,
+        );
         Self {
             // Note: Can't hold a `&mut` to both table and iter in `MuleMapDrainIter`, but we need to be sure to consume
             // all of the elements so that the original `MuleMap` is empty after dropped. We could have used an owned
@@ -355,10 +355,8 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 type KeysLeftSide<'a, K, V> =
     std::iter::Map<std::collections::hash_map::Keys<'a, K, V>, fn(&'a K) -> K>;
 
-type KeysRightSide<'a, K, V> = std::iter::FilterMap<
-    std::iter::Enumerate<std::slice::Iter<'a, Option<V>>>,
-    fn((usize, &'a Option<V>)) -> Option<K>,
->;
+type KeysRightSide<'a, K, V> =
+    FilterMap<Enumerate<std::slice::Iter<'a, Option<V>>>, fn((usize, &'a Option<V>)) -> Option<K>>;
 
 #[inline]
 fn map_fn_keys<K>(key: &K) -> K
@@ -375,7 +373,7 @@ fn filter_map_fn_keys<K, V, const TABLE_MIN_VALUE: i128>(
 where
     usize: AsPrimitive<K>,
     i128: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
 {
     value
         .as_ref()
@@ -391,7 +389,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Keys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -399,17 +397,16 @@ where
         table: &'a [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         type MapFn<'a, K> = fn(&'a K) -> K;
         type FilterMapFn<'a, K, V> = fn((usize, &Option<V>)) -> Option<K>;
 
         let left_iter: std::iter::Map<_, MapFn<'a, K>> =
             hash_map.keys().map(map_fn_keys as fn(&'a K) -> K);
-        let right_iter: std::iter::FilterMap<_, FilterMapFn<'a, K, V>> =
-            table.iter().enumerate().filter_map(
-                filter_map_fn_keys::<K, V, TABLE_MIN_VALUE> as fn((usize, &Option<V>)) -> Option<K>,
-            );
+        let right_iter: FilterMap<_, FilterMapFn<'a, K, V>> = table.iter().enumerate().filter_map(
+            filter_map_fn_keys::<K, V, TABLE_MIN_VALUE> as fn((usize, &Option<V>)) -> Option<K>,
+        );
 
         Keys {
             iter: left_iter.chain(right_iter),
@@ -447,7 +444,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -455,7 +452,7 @@ where
         table: &[Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         let left_iter = hash_map.into_keys();
 
@@ -495,7 +492,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 // Values
 
 type ValuesRightSide<'a, V> =
-    std::iter::FilterMap<std::slice::Iter<'a, Option<V>>, fn(&Option<V>) -> Option<&V>>;
+    FilterMap<std::slice::Iter<'a, Option<V>>, fn(&Option<V>) -> Option<&V>>;
 
 #[inline]
 #[allow(clippy::ref_option)]
@@ -512,7 +509,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -520,7 +517,7 @@ where
         table: &'a [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         let left_iter = hash_map.values();
         let right_iter = table
@@ -555,7 +552,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 // ValuesMut
 
 type ValuesMutRightSide<'a, V> =
-    std::iter::FilterMap<std::slice::IterMut<'a, Option<V>>, fn(&mut Option<V>) -> Option<&mut V>>;
+    FilterMap<std::slice::IterMut<'a, Option<V>>, fn(&mut Option<V>) -> Option<&mut V>>;
 
 #[inline]
 fn filter_map_fn_values_mut<V, const TABLE_MIN_VALUE: i128>(
@@ -578,7 +575,7 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -586,7 +583,7 @@ where
         table: &'a mut [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         let left_iter = hash_map.values_mut();
         let right_iter = table.iter_mut().filter_map(
@@ -621,7 +618,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 // IntoValues
 
 type IntoValuesRightSide<V, const TABLE_SIZE: usize> =
-    std::iter::FilterMap<std::array::IntoIter<Option<V>, TABLE_SIZE>, fn(Option<V>) -> Option<V>>;
+    FilterMap<std::array::IntoIter<Option<V>, TABLE_SIZE>, fn(Option<V>) -> Option<V>>;
 
 #[inline]
 fn filter_map_fn_into_values<V, const TABLE_MIN_VALUE: i128>(value: Option<V>) -> Option<V>
@@ -642,7 +639,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     usize: AsPrimitive<K>,
-    K: Copy + std::ops::Add<Output = K> + 'static,
+    K: Copy + Add<Output = K> + 'static,
     i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
@@ -650,7 +647,7 @@ where
         table: [Option<V>; TABLE_SIZE],
     ) -> Self
     where
-        S: std::hash::BuildHasher,
+        S: BuildHasher,
     {
         let left_iter = hash_map.into_values();
         let right_iter = table.into_iter().filter_map(
@@ -687,8 +684,8 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -781,8 +778,8 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -800,8 +797,8 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a mut MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -819,8 +816,8 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: std::hash::BuildHasher,
+    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
