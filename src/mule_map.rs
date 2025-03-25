@@ -170,7 +170,6 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Default
 where
     K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
     S: Default + std::hash::BuildHasher,
-    V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
@@ -215,8 +214,7 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::In
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
-    V: PartialEq + Copy,
+    S: std::hash::BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
@@ -234,12 +232,46 @@ where
     }
 }
 
+impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, &'a V)>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: Default + std::hash::BuildHasher,
+    V: Copy,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K, &'a V)>>(&mut self, iter: T) {
+        for (key, val) in iter {
+            self.insert(key, *val);
+        }
+    }
+}
+
+impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
+    for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
+where
+    K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    S: std::hash::BuildHasher,
+    i128: AsPrimitive<K>,
+    usize: AsPrimitive<K>,
+    <K as TryFrom<i128>>::Error: Debug,
+{
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        for (key, val) in iter {
+            self.insert(key, val);
+        }
+    }
+}
+
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
     K: PrimInt + Eq + std::hash::Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
-    S: Default + std::hash::BuildHasher,
-    V: PartialEq + Copy,
+    S: std::hash::BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
@@ -267,7 +299,10 @@ where
     /// Analogous to [`HashMap::new`]
     #[must_use]
     #[inline]
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    where
+        S: Default,
+    {
         Self::with_capacity_and_hasher(0, S::default())
     }
 
@@ -283,7 +318,10 @@ where
     /// Analogous to [`HashMap::with_capacity`]
     #[must_use]
     #[inline]
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self
+    where
+        S: Default,
+    {
         Self::with_capacity_and_hasher(capacity, S::default())
     }
 
@@ -330,7 +368,7 @@ where
 
         MuleMap::<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE> {
             hash_map: HashMap::with_capacity_and_hasher(capacity, hash_builder),
-            table: [None; TABLE_SIZE],
+            table: [const { None }; TABLE_SIZE],
         }
     }
 
@@ -349,7 +387,7 @@ where
     #[inline]
     pub fn clear(&mut self) {
         self.hash_map.clear();
-        self.table.fill(None);
+        self.table = [const { None }; TABLE_SIZE];
     }
 
     /// Returns true if the map contains a value for the specified key.
@@ -431,7 +469,7 @@ where
     #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.hash_map.is_empty() && !self.table.iter().any(|&x| x.is_some())
+        self.hash_map.is_empty() && !self.table.iter().any(Option::is_some)
     }
 
     /// Returns the number of elements in the map. Checks both the lookup table and the hashmap. Note, there is no
