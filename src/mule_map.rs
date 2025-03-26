@@ -523,6 +523,14 @@ where
 
     /// Returns capacity of the underlying hash map.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::with_capacity(100);
+    /// assert!(mule_map.capacity() >= 100);
+    /// ```
+    ///
     /// See [`HashMap::capacity`]
     #[must_use]
     #[inline]
@@ -531,6 +539,15 @@ where
     }
 
     /// Clears the map, removing all key-value pairs. Keeps the allocated memory for reuse.
+    ///
+    /// # Example
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// mule_map.clear();
+    /// assert!(mule_map.is_empty());
+    /// ```
     ///
     /// See [`HashMap::clear`]
     #[inline]
@@ -541,6 +558,16 @@ where
 
     /// Returns true if the map contains a value for the specified key.
     ///
+    /// # Example
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// assert!(mule_map.contains_key(999_999));
+    /// assert!(mule_map.contains_key(1));
+    /// assert!(!mule_map.contains_key(2));
+    /// assert!(!mule_map.contains_key(999_998));
+    /// ```
     /// Analogous to [`HashMap::contains_key`]
     #[must_use]
     #[inline]
@@ -553,6 +580,18 @@ where
     }
 
     /// Returns a reference to the value corresponding to the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.get(999_999), Some(&4));
+    /// assert_eq!(mule_map.get(1), Some(&2));
+    /// assert_eq!(mule_map.get(2), None);
+    /// assert_eq!(mule_map.get(999_998), None);
+    /// ```
     ///
     /// Analogous to [`HashMap::get`]
     #[must_use]
@@ -568,6 +607,18 @@ where
 
     /// Returns the key-value pair corresponding to the supplied key.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.get_key_value(999_999), Some((999_999, &4)));
+    /// assert_eq!(mule_map.get_key_value(1), Some((1,&2)));
+    /// assert_eq!(mule_map.get_key_value(2), None);
+    /// assert_eq!(mule_map.get_key_value(999_998), None);
+    /// ```
+    ///
     /// Analogous to [`HashMap::get_key_value`]
     #[must_use]
     #[inline]
@@ -577,6 +628,18 @@ where
     }
 
     /// Returns a mutable reference to the value corresponding to the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.get_mut(999_999), Some(&mut 4));
+    /// assert_eq!(mule_map.get_mut(1), Some(&mut 2));
+    /// assert_eq!(mule_map.get_mut(2), None);
+    /// assert_eq!(mule_map.get_mut(999_998), None);
+    /// ```
     ///
     /// Analogous to [`HashMap::get_mut`]
     #[must_use]
@@ -590,6 +653,13 @@ where
     }
 
     /// Returns a reference to the map’s [`BuildHasher`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// assert_eq!(&fnv_rs::FnvBuildHasher::default(), mule_map.hasher());
+    /// ```
     ///
     /// Analogous to [`HashMap::hasher`]
     #[must_use]
