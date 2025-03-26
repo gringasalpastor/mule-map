@@ -180,8 +180,11 @@ where
     /// Creates an empty [`MuleMap`].
     ///
     /// # Example
+    ///
     /// ```
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::default();
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::default();
+    /// assert!(mule_map.is_empty());
     /// ```
     ///
     /// See: [`MuleMap::with_capacity_and_hasher`]
@@ -199,6 +202,25 @@ where
     V: PartialEq,
     S: BuildHasher,
 {
+    /// Tests for `self` and `other` values to be equal, and is used by `==`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map1 = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map1.bump_int(10);
+    /// mule_map1.bump_int(11);
+    /// mule_map1.bump_int(999_999);
+    /// mule_map1.bump_int(999_999);
+    ///
+    /// let mut mule_map2 = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map2.bump_int(10);
+    /// mule_map2.bump_int(11);
+    /// mule_map2.bump_int(999_999);
+    /// mule_map2.bump_int(999_999);
+    ///
+    /// assert!(mule_map1 ==  mule_map2)
+    /// ```
     fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
         self.hash_map == other.hash_map && self.table == other.table
     }
@@ -225,6 +247,18 @@ where
 
     /// Returns a reference to the value corresponding to the supplied key.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    /// assert_eq!(mule_map[10], 1);
+    /// assert_eq!(mule_map[999_999], 1);
+    /// assert!(std::panic::catch_unwind(|| mule_map[123]).is_err());
+    ///
+    /// ```
+    ///
     /// # Panics
     ///
     /// Panics if the key is not present in the `MuleMap`.
@@ -243,6 +277,19 @@ where
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
+    /// Extends a collection with the contents of an iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.extend([(0, &10), (999_999, &3)].into_iter());
+    ///
+    /// let mut mule_map2 = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map2.insert(0, 10);
+    /// mule_map2.insert(999_999, 3);
+    /// assert_eq!(mule_map, mule_map2);
+    /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = (K, &'a V)>>(&mut self, iter: T) {
         for (key, val) in iter {
@@ -259,6 +306,19 @@ where
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
+    /// Extends a collection with the contents of an iterator.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.extend([(0, 10), (999_999, 3)].into_iter());
+    ///
+    /// let mut mule_map2 = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map2.insert(0, 10);
+    /// mule_map2.insert(999_999, 3);
+    /// assert_eq!(mule_map, mule_map2);
+    /// ```
     #[inline]
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         for (key, val) in iter {
@@ -281,6 +341,21 @@ where
     /// If any entries in the array have equal keys,
     /// all but one of the corresponding values will be dropped.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(3,4);
+    ///
+    /// let map1 = MuleMap::<_, _, fnv_rs::FnvBuildHasher>::from([(1, 2), (3, 4)]);
+    /// let map2: MuleMap<_, _, fnv_rs::FnvBuildHasher> = [(1, 2), (3, 4)].into();
+    ///
+    /// assert_eq!(map1, mule_map);
+    /// assert_eq!(map2, mule_map);
+    /// ```
     fn from(arr: [(K, V); N]) -> Self {
         let mut map = Self::default();
         for (key, val) in arr {
@@ -303,6 +378,20 @@ where
     ///
     /// If the iterator produces any pairs with equal keys,
     /// all but one of the corresponding values will be dropped.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(3,4);
+    ///
+    /// let map1 = MuleMap::<_, _, fnv_rs::FnvBuildHasher>::from_iter([(1, 2), (3, 4)].into_iter());
+    ///
+    /// assert_eq!(map1, mule_map);
+    /// ```
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut map = Self::default();
         map.extend(iter);
@@ -332,8 +421,11 @@ where
     /// Creates an empty [`MuleMap`].
     ///
     /// # Example
+    ///
     /// ```
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::new();
+    /// assert!(mule_map.is_empty());
     /// ```
     ///
     /// See: [`MuleMap::with_capacity_and_hasher`]
@@ -352,8 +444,11 @@ where
     /// Creates an empty [`MuleMap`] with at least the provided capacity.
     ///
     /// # Example
+    ///
     /// ```
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity(100);
+    /// type Hash = fnv_rs::FnvBuildHasher;
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::with_capacity(100);
+    /// assert!(mule_map.is_empty());
     /// ```
     ///
     /// See: [`MuleMap::with_capacity_and_hasher`]
@@ -372,9 +467,11 @@ where
     /// Creates an empty [`MuleMap`] using `hash_builder`.
     ///
     /// # Example
+    ///
     /// ```
     /// type Hash = fnv_rs::FnvBuildHasher;
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_hasher(Hash::default());
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::with_hasher(Hash::default());
+    /// assert!(mule_map.is_empty());
     /// ```
     ///
     /// See: [`MuleMap::with_capacity_and_hasher`]
@@ -392,9 +489,11 @@ where
     /// Creates an empty [`MuleMap`] with at least the provided capacity and using `hash_builder`.
     ///
     /// # Example
+    ///
     /// ```
     /// type Hash = fnv_rs::FnvBuildHasher;
-    /// let mule_map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::with_capacity_and_hasher(100, Hash::default());
+    /// let mule_map = mule_map::MuleMap::<u32, usize, Hash>::with_capacity_and_hasher(100, Hash::default());
+    /// assert!(mule_map.is_empty());
     /// ```
     ///
     /// # Panics
