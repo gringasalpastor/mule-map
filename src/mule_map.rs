@@ -743,6 +743,20 @@ where
 
     /// Removes a key from the map, returning the value at the key if the key was previously in the map.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// assert_eq!(mule_map.remove(0), None);
+    /// assert!(!mule_map.is_empty());
+    /// assert_eq!(mule_map.remove(1), Some(2));
+    /// assert!(mule_map.is_empty());
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.remove(999_999), Some(4));
+    /// assert!(mule_map.is_empty());
+    /// ```
+    ///
     ///  Analogous to [`HashMap::remove`]
     #[inline]
     pub fn remove(&mut self, key: K) -> Option<V> {
@@ -754,6 +768,20 @@ where
     }
 
     /// Removes a key from the map, returning the stored key and value if the key was previously in the map.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// assert_eq!(mule_map.remove_entry(0), None);
+    /// assert!(!mule_map.is_empty());
+    /// assert_eq!(mule_map.remove_entry(1), Some((1, 2)));
+    /// assert!(mule_map.is_empty());
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.remove_entry(999_999), Some((999_999,4)));
+    /// assert!(mule_map.is_empty());
+    /// ```
     ///
     ///  Analogous to [`HashMap::remove_entry`]
     #[inline]
@@ -768,6 +796,13 @@ where
 
     /// Calls `reserve` on the underlying [`HashMap`]
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.reserve(100);
+    /// ```
+    ///
     ///  Analogous to [`HashMap::reserve`]
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
@@ -775,6 +810,14 @@ where
     }
 
     /// Calls `shrink_to` on the underlying [`HashMap`]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.shrink_to(100);
+    /// ```
+    ///
     ///
     ///  Analogous to [`HashMap::shrink_to`]
     #[inline]
