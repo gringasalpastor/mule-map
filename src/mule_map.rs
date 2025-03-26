@@ -671,6 +671,18 @@ where
     /// Inserts a key-value pair into the map. If the map did not have this key present, None is returned. If the map
     /// did have this key present, the value is updated, and the old value is returned.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.insert(1,2);
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.get_key_value(999_999), Some((999_999, &4)));
+    /// assert_eq!(mule_map.get_key_value(1), Some((1,&2)));
+    /// assert_eq!(mule_map.get_key_value(2), None);
+    /// assert_eq!(mule_map.get_key_value(999_998), None);
+    /// ```
+    ///
     /// Analogous to [`HashMap::insert`]
     #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
@@ -684,6 +696,21 @@ where
     /// Returns true if the map contains no elements. Checks both the lookup table and the hashmap. Note, there is no
     /// tracking in the lookup table - in the worst case, we have to check all elements of the lookup table.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// assert!(mule_map.is_empty());
+    /// mule_map.insert(1,2);
+    /// assert!(!mule_map.is_empty());
+    /// mule_map.clear();
+    /// assert!(mule_map.is_empty());
+    /// mule_map.insert(999_999,4);
+    /// assert!(!mule_map.is_empty());
+    /// mule_map.clear();
+    /// assert!(mule_map.is_empty());
+    /// ```
+    ///
     ///  Analogous to [`HashMap::is_empty`]
     #[must_use]
     #[inline]
@@ -693,6 +720,19 @@ where
 
     /// Returns the number of elements in the map. Checks both the lookup table and the hashmap. Note, there is no
     /// tracking in the lookup table, so this will scan the whole table.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// assert_eq!(mule_map.len(), 0);
+    /// mule_map.insert(1,2);
+    /// assert_eq!(mule_map.len(), 1);
+    /// mule_map.insert(999_999,4);
+    /// assert_eq!(mule_map.len(), 2);
+    /// mule_map.clear();
+    /// assert_eq!(mule_map.len(), 0);
+    /// ```
     ///
     ///  Analogous to [`HashMap::len`]
     #[must_use]
