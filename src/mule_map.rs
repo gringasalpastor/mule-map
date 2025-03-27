@@ -162,7 +162,7 @@ pub struct MuleMap<
     V,
     S,
     const TABLE_MIN_VALUE: i128 = 0,
-    const TABLE_SIZE: usize = { u8::MAX as usize },
+    const TABLE_SIZE: usize = { u8::MAX as usize + 1 },
 > {
     hash_map: HashMap<K, V, S>,
     table: [Option<V>; TABLE_SIZE],
@@ -814,10 +814,15 @@ where
     /// # Example
     ///
     /// ```
-    /// let mut mule_map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-    /// mule_map.shrink_to(100);
+    /// let mut map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::with_capacity(100);
+    /// map.insert(999_999, 2);
+    /// map.insert(999_998, 4);
+    /// assert!(map.capacity() >= 100);
+    /// map.shrink_to(10);
+    /// assert!(map.capacity() >= 10);
+    /// map.shrink_to(0);
+    /// assert!(map.capacity() >= 2);
     /// ```
-    ///
     ///
     ///  Analogous to [`HashMap::shrink_to`]
     #[inline]
@@ -827,6 +832,17 @@ where
 
     /// Calls `shrink_to_fit` on the underlying [`HashMap`]
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::with_capacity(100);
+    /// map.insert(999_999, 2);
+    /// map.insert(999_998, 4);
+    /// assert!(map.capacity() >= 100);
+    /// map.shrink_to_fit();
+    /// assert!(map.capacity() >= 2);
+    /// ```
+    ///
     ///  Analogous to [`HashMap::shrink_to_fit`]
     #[inline]
     pub fn shrink_to_fit(&mut self) {
@@ -834,6 +850,14 @@ where
     }
 
     /// Calls `try_reserve` on the underlying [`HashMap`]
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::new();
+    /// map.try_reserve(10).expect("Should have space to allocate 10 elements");
+    /// ```
     ///
     /// # Errors
     ///
@@ -850,6 +874,21 @@ where
 
     /// Modify the values at location `key` by calling `f` on its value. If no value present, create a new value set to
     /// `default`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::new();
+    /// map.modify_or_insert(10, |x| *x += 1, 100);
+    /// assert!(map.get(10) == Some(&100));
+    /// map.modify_or_insert(10, |x| *x += 1, 100);
+    /// assert!(map.get(10) == Some(&101));
+    /// map.modify_or_insert(999_999, |x| *x += 1, 100);
+    /// assert!(map.get(999_999) == Some(&100));
+    /// map.modify_or_insert(999_999, |x| *x += 1, 100);
+    /// assert!(map.get(999_999) == Some(&101));
+    /// ```
+    ///
     #[inline]
     pub fn modify_or_insert<F>(&mut self, key: K, f: F, default: V)
     where
@@ -871,6 +910,20 @@ where
     ///
     /// *NOTE:* This method can only be called with values that implement `AddAssign`, like primitives. For `NonZero<T>`
     /// values use [`MuleMap::bump_non_zero`] - It uses the niche optimization for better performance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::new();
+    /// map.bump_int(10);
+    /// assert!(map.get(10) == Some(&1));
+    /// map.bump_int(10);
+    /// assert!(map.get(10) == Some(&2));
+    /// map.bump_int(999_999);
+    /// assert!(map.get(999_999) == Some(&1));
+    /// map.bump_int(999_999);
+    /// assert!(map.get(999_999) == Some(&2));
+    /// ```
     ///
     /// # Panics
     ///
@@ -894,6 +947,22 @@ where
     /// location. Uses the niche optimization for better performance with `Option<NonZero<T>>`.
     ///
     /// *NOTE:* This method can only be called with `NonZero<T>` values. For primitive values use [`MuleMap::bump_int`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::num::NonZero;
+    /// let mut map = mule_map::MuleMap::<u32, NonZero<i32>, fnv_rs::FnvBuildHasher>::new();
+    /// map.bump_non_zero(10);
+    ///
+    /// assert!(map.get(10) == Some(&const { NonZero::new(1).expect("1 is not 0") }));
+    /// map.bump_non_zero(10);
+    /// assert!(map.get(10) == Some(&const { NonZero::new(2).expect("2 is not 0") }));
+    /// map.bump_non_zero(999_999);
+    /// assert!(map.get(999_999) == Some(&const { NonZero::new(1).expect("1 is not 0") }));
+    /// map.bump_non_zero(999_999);
+    /// assert!(map.get(999_999) == Some(&const { NonZero::new(2).expect("2 is not 0") }));
+    /// ```
     ///
     /// # Panics
     ///
@@ -925,6 +994,16 @@ where
 
     /// Gets the given key’s corresponding entry in the map for in-place manipulation.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
+    /// map.entry(5).or_insert(3);
+    /// assert!(map.get(5) == Some(&3));
+    /// map.entry(5).and_modify(|e| *e += 1).or_insert(1);
+    /// assert!(map.get(5) == Some(&4));
+    /// ```
+    ///
     /// Analogous to [`HashMap::entry`]
     #[must_use]
     #[inline]
@@ -955,30 +1034,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let mut mule_map_int = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-        mule_map_int.bump_int(10);
-        mule_map_int.bump_int(10);
-        assert_eq!(mule_map_int.get(10), Some(&2));
+    fn use_lookup_table() {
+        type DefaultRange = MuleMap<i32, i32, fnv_rs::FnvBuildHasher, 0, { u8::MAX as usize + 1 }>;
+        type NegRange = MuleMap<i32, i32, fnv_rs::FnvBuildHasher, -100, { u8::MAX as usize + 1 }>;
 
-        let mut mule_map_non_zero = MuleMap::<u32, NonZero<i32>, fnv_rs::FnvBuildHasher>::default();
+        assert!(DefaultRange::use_lookup_table(0));
+        assert!(!DefaultRange::use_lookup_table(-1));
+        assert!(DefaultRange::use_lookup_table(255));
+        assert!(!DefaultRange::use_lookup_table(256));
 
-        mule_map_non_zero.bump_non_zero(10);
-        mule_map_non_zero.bump_non_zero(10);
-        assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
-        mule_map_non_zero.bump_non_zero(999_999);
-        mule_map_non_zero.bump_non_zero(999_999);
-        assert_eq!(
-            mule_map_non_zero.get(999_999),
-            NonZero::<i32>::new(2).as_ref()
-        );
+        assert!(NegRange::use_lookup_table(-100));
+        assert!(!NegRange::use_lookup_table(-101));
+        assert!(NegRange::use_lookup_table(155));
+        assert!(!NegRange::use_lookup_table(156));
+    }
+    #[test]
+    fn check_table_range() {
+        type BadRange = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 0, { u8::MAX as usize + 2 }>;
+        type BadRange2 = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, -1, { u8::MAX as usize }>;
 
-        let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-
-        mule_map.modify_or_insert(100, |x| *x += 10, 1);
-        assert_eq!(mule_map.get(100), Some(&1));
-
-        mule_map.modify_or_insert(100, |x| *x += 10, 1);
-        assert_eq!(mule_map.get(100), Some(&11));
+        assert!(std::panic::catch_unwind(BadRange::new).is_err());
+        assert!(std::panic::catch_unwind(BadRange2::new).is_err());
     }
 }
