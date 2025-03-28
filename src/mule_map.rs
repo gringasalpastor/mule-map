@@ -121,7 +121,7 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
 ///     that if you need better performance you will likely also want to use a custom hash function.
 /// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE +
-///     TABLE_SIZE`, then the value will be stored directly in the lookup table, instead of using the `HashMap`.
+///     TABLE_SIZE` (exclusive), then the value will be stored directly in the lookup table, instead of using the `HashMap`.
 ///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so
 ///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
 ///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
@@ -153,8 +153,8 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// mule_map_non_zero.bump_non_zero(999_999);
 /// mule_map_non_zero.bump_non_zero(999_999);
 ///
-// assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
-// assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
+/// assert_eq!(mule_map_non_zero.get(10), NonZero::<i32>::new(2).as_ref());
+/// assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 /// ```
 #[derive(Debug, Clone)]
 pub struct MuleMap<
@@ -409,13 +409,52 @@ where
 {
     // Hard limit, way beyond practical lookup table size. This makes it easier to calculate the key index
     const STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX: () =
-        assert!((TABLE_SIZE as u128) < i32::MAX as u128);
+        assert!((TABLE_SIZE as u128) <= i32::MAX as u128 + 1);
+
+    // NOTE: using `saturating_sub` to allow for when `TABLE_SIZE == 0`
+    const STATIC_ASSERT_SIZE_FITS_I128: () = assert!(
+        TABLE_MIN_VALUE
+            .checked_add(const { TABLE_SIZE.saturating_sub(1) as i128 })
+            .is_some()
+    );
+
+    const STATIC_ASSERT_ISIZE_FITS_I32: () = assert!(isize::MAX as u128 >= i32::MAX as u128);
 
     #[inline]
     #[must_use]
-    fn use_lookup_table(key: K) -> bool {
-        // NOTE: TABLE_MIN_VALUE + TABLE_SIZE and TABLE_MIN_VALUE must fit into a key type, K
-        key < (TABLE_MIN_VALUE.as_() + TABLE_SIZE.as_()) && key >= TABLE_MIN_VALUE.as_()
+    pub(crate) fn use_lookup_table(key: K) -> bool {
+        // Avoid underflow when calculating `TABLE_SIZE - 1`.
+        if const { TABLE_SIZE == 0 } {
+            return false;
+        }
+
+        // NOTE: `TABLE_MIN_VALUE + TABLE_SIZE - 1` and TABLE_MIN_VALUE must fit into a key type, K
+        key <= (TABLE_MIN_VALUE.as_() + const { TABLE_SIZE.saturating_sub(1) }.as_())
+            && key >= TABLE_MIN_VALUE.as_()
+    }
+
+    #[inline]
+    pub(crate) fn check_bounds()
+    where
+        <K as TryFrom<i128>>::Error: Debug,
+    {
+        let () = Self::STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX;
+        let () = Self::STATIC_ASSERT_SIZE_FITS_I128;
+        let () = Self::STATIC_ASSERT_ISIZE_FITS_I32;
+
+        // NOTE: using `saturating_sub` to allow for when `TABLE_SIZE == 0`
+        // `TABLE_MIN_VALUE + TABLE_SIZE - 1` must fit in i128, because of `STATIC_ASSERT_SIZE_FITS_I128`
+        <i128 as TryInto<K>>::try_into(
+            TABLE_MIN_VALUE + const { TABLE_SIZE.saturating_sub(1) } as i128,
+        )
+        .unwrap_or_else(|_| {
+            panic!(
+                "TABLE_MIN_VALUE ({TABLE_MIN_VALUE:?}) + TABLE_SIZE ({TABLE_SIZE:?}) should fit into key type, K"
+            )
+        });
+
+        <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE)
+            .expect("TABLE_MIN_VALUE should fit into key type, K");
     }
 
     /// Creates an empty [`MuleMap`].
@@ -499,7 +538,7 @@ where
     /// # Panics
     ///
     /// Panics if
-    ///  - `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE + TABLE_SIZE` doesn't fit into key type, `K`.
+    ///  - `TABLE_MIN_VALUE` or `TABLE_MIN_VALUE + TABLE_SIZE - 1` doesn't fit into key type, `K`.
     ///
     /// Analogous to [`HashMap::with_capacity_and_hasher`]
     #[must_use]
@@ -508,12 +547,7 @@ where
     where
         <K as TryFrom<i128>>::Error: Debug,
     {
-        let () = Self::STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX;
-
-        <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE + TABLE_SIZE as i128)
-            .expect("TABLE_MIN_VALUE + TABLE_SIZE should fit into key type, K");
-        <i128 as TryInto<K>>::try_into(TABLE_MIN_VALUE)
-            .expect("TABLE_MIN_VALUE should fit into key type, K");
+        Self::check_bounds();
 
         MuleMap::<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE> {
             hash_map: HashMap::with_capacity_and_hasher(capacity, hash_builder),
@@ -1037,6 +1071,7 @@ mod tests {
     fn use_lookup_table() {
         type DefaultRange = MuleMap<i32, i32, fnv_rs::FnvBuildHasher, 0, { u8::MAX as usize + 1 }>;
         type NegRange = MuleMap<i32, i32, fnv_rs::FnvBuildHasher, -100, { u8::MAX as usize + 1 }>;
+        type ZeroSize = MuleMap<i32, i32, fnv_rs::FnvBuildHasher, 0, { u8::MIN as usize }>;
 
         assert!(DefaultRange::use_lookup_table(0));
         assert!(!DefaultRange::use_lookup_table(-1));
@@ -1047,13 +1082,22 @@ mod tests {
         assert!(!NegRange::use_lookup_table(-101));
         assert!(NegRange::use_lookup_table(155));
         assert!(!NegRange::use_lookup_table(156));
+
+        assert!(!ZeroSize::use_lookup_table(0));
+        assert!(!ZeroSize::use_lookup_table(1));
     }
     #[test]
     fn check_table_range() {
         type BadRange = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 0, { u8::MAX as usize + 2 }>;
         type BadRange2 = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, -1, { u8::MAX as usize }>;
+        type OkRange = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 0, { u8::MAX as usize + 1 }>;
+        type OkRange2 = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 1, { u8::MAX as usize }>;
+        type ZeroSize = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 0, { u8::MIN as usize }>;
 
         assert!(std::panic::catch_unwind(BadRange::new).is_err());
         assert!(std::panic::catch_unwind(BadRange2::new).is_err());
+        assert!(std::panic::catch_unwind(OkRange::new).is_ok());
+        assert!(std::panic::catch_unwind(OkRange2::new).is_ok());
+        assert!(std::panic::catch_unwind(ZeroSize::new).is_ok());
     }
 }
