@@ -1,11 +1,9 @@
 use crate::MuleMap;
-use crate::mule_map::KeyIndex;
+use crate::mule_map::Key;
 use num_traits::AsPrimitive;
-use num_traits::PrimInt;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::BuildHasher;
-use std::hash::Hash;
 use std::iter::Enumerate;
 use std::iter::FilterMap;
 use std::ops::Add;
@@ -684,12 +682,11 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     #[inline]
     pub fn iter(&self) -> Iter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
@@ -778,12 +775,11 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, &'a V);
     type IntoIter = Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -797,12 +793,11 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a mut MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, &'a mut V);
     type IntoIter = IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -816,12 +811,11 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;

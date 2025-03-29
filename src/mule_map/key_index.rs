@@ -143,16 +143,13 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for isize {
 #[cfg(test)]
 mod tests {
     use crate::MuleMap;
-    use crate::mule_map::key::PrimInt;
+    use crate::mule_map::Key;
     use num_traits::AsPrimitive;
     use std::fmt::Debug;
-    use std::hash::Hash;
-
-    use super::*;
 
     fn test_index<K, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>(key: K) -> usize
     where
-        K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+        K: Key<TABLE_MIN_VALUE>,
         i128: AsPrimitive<K>,
         usize: AsPrimitive<K>,
         <K as TryFrom<i128>>::Error: Debug,

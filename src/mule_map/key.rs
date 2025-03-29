@@ -1,7 +1,6 @@
 use sealed::sealed;
 
 #[sealed]
-#[doc(hidden)]
 pub trait PrimInt: num_traits::PrimInt {
     type PromotedType; // Used for addition to avoid overflow
 }
@@ -66,17 +65,17 @@ impl PrimInt for isize {
     type PromotedType = Self;
 }
 
-// use super::key_index;
+use super::key_index::KeyIndex;
 use std::fmt::Debug;
 use std::hash::Hash;
 
 pub trait Key<const TABLE_MIN_VALUE: i128>:
-    PrimInt + Eq + Hash + TryFrom<i128> + Debug + 'static
+    PrimInt + Eq + Hash + TryFrom<i128> + KeyIndex<TABLE_MIN_VALUE> + Debug + 'static
 {
 }
 
 impl<
-    T: PrimInt + PrimInt + Eq + Hash + TryFrom<i128> + Debug + 'static,
+    T: PrimInt + Eq + Hash + TryFrom<i128> + KeyIndex<TABLE_MIN_VALUE> + Debug + 'static,
     const TABLE_MIN_VALUE: i128,
 > Key<TABLE_MIN_VALUE> for T
 {
