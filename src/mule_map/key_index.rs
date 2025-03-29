@@ -143,16 +143,22 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for isize {
 #[cfg(test)]
 mod tests {
     use crate::MuleMap;
-    use crate::mule_map::Key;
+    use crate::mule_map::key::Key;
+    use crate::mule_map::key::PrimInt;
     use num_traits::AsPrimitive;
     use std::fmt::Debug;
+    use std::ops::Add;
 
     fn test_index<K, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>(key: K) -> usize
     where
         K: Key<TABLE_MIN_VALUE>,
-        i128: AsPrimitive<K>,
-        usize: AsPrimitive<K>,
+        i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+        usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+        <K as PrimInt>::PromotedType: Copy,
+        <K as PrimInt>::PromotedType: AsPrimitive<K>,
+        <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
         <K as TryFrom<i128>>::Error: Debug,
+        <K as PrimInt>::PromotedType: Add,
     {
         type Hash = fnv_rs::FnvBuildHasher;
         MuleMap::<K, u8, Hash, TABLE_MIN_VALUE, TABLE_SIZE>::check_bounds();
@@ -232,10 +238,10 @@ mod tests {
 
     #[test]
     fn check_table_range_signed() {
-        // // i8
-        // assert_eq!(
-        //     test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
-        //     0
-        // );
+        // i8
+        assert_eq!(
+            test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
+            0
+        );
     }
 }

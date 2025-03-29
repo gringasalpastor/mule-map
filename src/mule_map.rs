@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::BuildHasher;
 use std::num::NonZero;
+use std::ops::Add;
 use std::ops::AddAssign;
 
 pub(crate) mod entry;
@@ -173,8 +174,11 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Default
 where
     K: Key<TABLE_MIN_VALUE>,
     S: Default + BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
     <K as TryFrom<i128>>::Error: Debug,
 {
     /// Creates an empty [`MuleMap`].
@@ -240,8 +244,11 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::In
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
 {
     type Output = V;
 
@@ -274,8 +281,11 @@ where
     K: Key<TABLE_MIN_VALUE>,
     S: Default + BuildHasher,
     V: Copy,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
 {
     /// Extends a collection with the contents of an iterator.
     ///
@@ -303,8 +313,11 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
 {
     /// Extends a collection with the contents of an iterator.
     ///
@@ -332,8 +345,11 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize, const N: usi
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher + Default,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
     <K as TryFrom<i128>>::Error: Debug,
 {
     /// Converts a `[(K, V); N]` into a `MuleMap<K, V>`.
@@ -370,8 +386,10 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> FromIterator
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher + Default,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
     <K as TryFrom<i128>>::Error: Debug,
 {
     /// Constructs a `MuleMap<K, V>` from an iterator of key-value pairs.
@@ -404,8 +422,11 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
+    i128: AsPrimitive<<K as PrimInt>::PromotedType> + AsPrimitive<K>,
+    usize: AsPrimitive<<K as PrimInt>::PromotedType>,
+    <K as PrimInt>::PromotedType: Copy + Add,
+    <<K as PrimInt>::PromotedType as Add>::Output: AsPrimitive<K>,
+    <K as PrimInt>::PromotedType: Add,
 {
     // Hard limit, way beyond practical lookup table size. This makes it easier to calculate the key index
     const STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX: () =
@@ -422,22 +443,20 @@ where
 
     #[inline]
     #[must_use]
-    pub(crate) fn use_lookup_table(key: K) -> bool {
+    pub(crate) fn use_lookup_table(key: K) -> bool
+where {
         // Avoid underflow when calculating `TABLE_SIZE - 1`.
         if const { TABLE_SIZE == 0 } {
             return false;
         }
 
-        eprintln!(
-            "A: {:?} B: {:?} TABLE_SIZE: {:?}",
-            TABLE_MIN_VALUE.as_(),
-            const { TABLE_SIZE.saturating_sub(1) }.as_(),
-            TABLE_SIZE
-        );
-
         // NOTE: `TABLE_MIN_VALUE + TABLE_SIZE - 1` and TABLE_MIN_VALUE must fit into a key type, K
-        key <= (TABLE_MIN_VALUE.as_() + const { TABLE_SIZE.saturating_sub(1) }.as_())
-            && key >= TABLE_MIN_VALUE.as_()
+        key <= <<<K as PrimInt>::PromotedType as Add>::Output as AsPrimitive<K>>::as_(
+            <i128 as AsPrimitive<<K as PrimInt>::PromotedType>>::as_(TABLE_MIN_VALUE)
+                + <usize as AsPrimitive<<K as PrimInt>::PromotedType>>::as_(
+                    const { TABLE_SIZE.saturating_sub(1) },
+                ),
+        ) && key >= TABLE_MIN_VALUE.as_()
     }
 
     #[inline]
