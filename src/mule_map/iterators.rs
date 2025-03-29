@@ -684,7 +684,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
@@ -778,7 +778,7 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
@@ -797,7 +797,7 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a mut MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,
@@ -816,7 +816,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
     S: BuildHasher,
     V: PartialEq + Copy,
     i128: AsPrimitive<K>,

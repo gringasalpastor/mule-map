@@ -173,7 +173,7 @@ pub struct MuleMap<
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Default
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: Key<TABLE_MIN_VALUE> + KeyIndex<K, TABLE_MIN_VALUE>,
+    K: Key<TABLE_MIN_VALUE> + KeyIndex<TABLE_MIN_VALUE>,
     S: Default + BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -240,7 +240,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::ops::Index<K>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -273,7 +273,7 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, &'a V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: Default + BuildHasher,
     V: Copy,
     i128: AsPrimitive<K>,
@@ -303,7 +303,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Extend<(K, V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -332,7 +332,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize, const N: usize>
     From<[(K, V); N]> for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: BuildHasher + Default,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -370,7 +370,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> FromIterator<(K, V)>
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: BuildHasher + Default,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
@@ -404,7 +404,7 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+    K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
     S: BuildHasher,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,

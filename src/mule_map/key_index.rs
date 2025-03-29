@@ -2,12 +2,12 @@ use sealed::sealed;
 
 #[sealed]
 #[doc(hidden)]
-pub trait KeyIndex<K, const TABLE_MIN_VALUE: i128> {
+pub trait KeyIndex<const TABLE_MIN_VALUE: i128> {
     fn key_index(&self) -> usize;
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u8, TABLE_MIN_VALUE> for u8 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for u8 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -18,7 +18,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<u8, TABLE_MIN_VALUE> for u8 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u16, TABLE_MIN_VALUE> for u16 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for u16 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -29,7 +29,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<u16, TABLE_MIN_VALUE> for u16 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u32, TABLE_MIN_VALUE> for u32 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for u32 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -40,7 +40,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<u32, TABLE_MIN_VALUE> for u32 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u64, TABLE_MIN_VALUE> for u64 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for u64 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -51,7 +51,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<u64, TABLE_MIN_VALUE> for u64 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<u128, TABLE_MIN_VALUE> for u128 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for u128 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -63,7 +63,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<u128, TABLE_MIN_VALUE> for u128 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i8, TABLE_MIN_VALUE> for i8 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for i8 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -74,7 +74,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i8, TABLE_MIN_VALUE> for i8 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i16, TABLE_MIN_VALUE> for i16 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for i16 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -85,7 +85,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i16, TABLE_MIN_VALUE> for i16 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i32, TABLE_MIN_VALUE> for i32 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for i32 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -96,7 +96,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i32, TABLE_MIN_VALUE> for i32 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i64, TABLE_MIN_VALUE> for i64 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for i64 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -107,7 +107,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i64, TABLE_MIN_VALUE> for i64 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<i128, TABLE_MIN_VALUE> for i128 {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for i128 {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -118,7 +118,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<i128, TABLE_MIN_VALUE> for i128 {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<usize, TABLE_MIN_VALUE> for usize {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for usize {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -129,7 +129,7 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<usize, TABLE_MIN_VALUE> for usize {
 }
 
 #[sealed]
-impl<const TABLE_MIN_VALUE: i128> KeyIndex<isize, TABLE_MIN_VALUE> for isize {
+impl<const TABLE_MIN_VALUE: i128> KeyIndex<TABLE_MIN_VALUE> for isize {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
     fn key_index(&self) -> usize {
@@ -152,7 +152,7 @@ mod tests {
 
     fn test_index<K, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>(key: K) -> usize
     where
-        K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
+        K: PrimInt + Eq + Hash + KeyIndex<TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
         i128: AsPrimitive<K>,
         usize: AsPrimitive<K>,
         <K as TryFrom<i128>>::Error: Debug,
