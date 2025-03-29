@@ -1,5 +1,5 @@
+use super::key::PrimInt;
 use Entry::{Occupied, Vacant};
-use num_traits::PrimInt;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
 ///

@@ -143,8 +143,8 @@ impl<const TABLE_MIN_VALUE: i128> KeyIndex<isize, TABLE_MIN_VALUE> for isize {
 #[cfg(test)]
 mod tests {
     use crate::MuleMap;
+    use crate::mule_map::key::PrimInt;
     use num_traits::AsPrimitive;
-    use num_traits::PrimInt;
     use std::fmt::Debug;
     use std::hash::Hash;
 
@@ -152,7 +152,7 @@ mod tests {
 
     fn test_index<K, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>(key: K) -> usize
     where
-        K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+        K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + Debug + 'static,
         i128: AsPrimitive<K>,
         usize: AsPrimitive<K>,
         <K as TryFrom<i128>>::Error: Debug,
@@ -163,12 +163,14 @@ mod tests {
         key.key_index()
     }
 
+    const MAX_U8_SIZE: usize = u8::MAX as usize + 1;
+
     #[test]
-    fn check_table_range() {
-        const MAX_U8_SIZE: usize = u8::MAX as usize + 1;
+    fn check_table_range_unsigned() {
         const MAX_U16_SIZE: usize = u16::MAX as usize + 1;
         const MAX_SIZE: usize = i32::MAX as usize + 1; // i32::MAX is largest allowed
         const MAX_INDEX: usize = i32::MAX as usize;
+        const MAX_INDEX_U32: u32 = i32::MAX as u32; // Help clippy see there is no overflow
 
         // u8
         assert_eq!(test_index::<u8, 0, MAX_U8_SIZE>(u8::MIN), 0);
@@ -192,13 +194,13 @@ mod tests {
         assert_eq!(test_index::<u32, 0, MAX_SIZE>(u32::MIN), 0);
         assert_eq!(test_index::<u32, 0, MAX_SIZE>(i32::MAX as u32), MAX_INDEX);
         assert_eq!(
-            test_index::<u32, { (u32::MAX - MAX_INDEX as u32) as i128 }, MAX_SIZE>(
-                u32::MAX - MAX_INDEX as u32
+            test_index::<u32, { (u32::MAX - MAX_INDEX_U32) as i128 }, MAX_SIZE>(
+                u32::MAX - MAX_INDEX_U32
             ),
             0
         );
         assert_eq!(
-            test_index::<u32, { (u32::MAX - MAX_INDEX as u32) as i128 }, MAX_SIZE>(u32::MAX),
+            test_index::<u32, { (u32::MAX - MAX_INDEX_U32) as i128 }, MAX_SIZE>(u32::MAX),
             MAX_INDEX
         );
 
@@ -229,5 +231,14 @@ mod tests {
             test_index::<u128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(i128::MAX as u128),
             MAX_INDEX
         );
+    }
+
+    #[test]
+    fn check_table_range_signed() {
+        // // i8
+        // assert_eq!(
+        //     test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
+        //     0
+        // );
     }
 }
