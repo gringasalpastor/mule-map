@@ -3,7 +3,7 @@
 //! style="border-radius:50%" />
 //! </p>
 //!
-//! # `MuleMap<🫏,🗺>`
+//! # [`MuleMap`]<🫏,🗺>
 //! [![ci](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml/badge.svg)](https://github.com/gringasalpastor/mule-map/actions/workflows/ci.yml)
 //! [![](https://docs.rs/mule-map/badge.svg)](https://docs.rs/mule-map)
 //! [![Version](https://img.shields.io/crates/v/mule-map.svg?style=flat-square)](https://crates.io/crates/mule-map)

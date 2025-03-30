@@ -1,460 +1,97 @@
 use sealed::sealed;
+use std::fmt::Debug;
+use std::hash::Hash;
 
 #[sealed]
 pub trait PrimInt: num_traits::PrimInt {
     type PromotedType; // Used to avoid overflow during addition
 
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self;
+    fn as_promoted(val: Self) -> Self::PromotedType;
     fn i128_as_k(val: i128) -> Self;
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType;
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType;
-    fn promoted_as_k(val: Self::PromotedType) -> Self;
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType;
+    fn i128_as_promoted(val: i128) -> Self::PromotedType;
+    fn usize_as_promoted(val: usize) -> Self::PromotedType;
+    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self;
 }
 
-#[sealed]
-impl PrimInt for u8 {
-    type PromotedType = Self;
+macro_rules! impl_prim_int {
+    (type=$prim_type:ty, promoted_type=$promoted_type:ty) => {
+        #[sealed]
+        impl PrimInt for $prim_type {
+            type PromotedType = $promoted_type;
 
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
+            // NOTE: This could almost use `Self::PromotedType::from(val)` if not for isize -> i64, which is also
+            // lossless because i64 is the largest type isize can be.
+            #[inline]
+            #[allow(clippy::cast_lossless)]
+            fn as_promoted(val: Self) -> Self::PromotedType {
+                val as Self::PromotedType
+            }
 
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
+            // NOTE: `TABLE_MIN_VALUE` fits into `K`.  See [`mule_map::MuleMap::check_bounds`].
+            //
+            // CAUTION: Don't use with other values that might truncate
+            #[inline]
+            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_sign_loss)]
+            fn i128_as_k(val: i128) -> Self {
+                val as Self
+            }
 
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
+            // NOTE: `TABLE_MIN_VALUE` fits into `K`. So they it also fits into `Self::PromotedType`.  See
+            // [`mule_map::MuleMap::check_bounds`]
+            //
+            // CAUTION: Don't use with other values that might truncate
+            #[inline]
+            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_sign_loss)]
+            fn i128_as_promoted(val: i128) -> Self::PromotedType {
+                val as Self::PromotedType
+            }
 
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
+            // NOTE: `TABLE_SIZE.saturating_sub(1)` fits into `K`. So it also fits into `Self::PromotedType`.  See
+            // [`mule_map::MuleMap::check_bounds`]
+            //
+            // CAUTION: Don't use with other values that might truncate
+            #[inline]
+            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_possible_wrap)]
+            fn usize_as_promoted(val: usize) -> Self::PromotedType {
+                val as Self::PromotedType
+            }
 
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
+            // NOTE: To be used with 2 values where their sum fits into K. For example, `TABLE_MIN_VALUE + TABLE_SIZE -
+            // 1` or `TABLE_MIN_VALUE + key_index`. Promotion is needed for cases like i8::MIN + 255, since 255 does not
+            // fit in i8
+            //
+            // CAUTION: Don't use with other values that might truncate
+            #[inline]
+            #[allow(clippy::cast_possible_truncation)]
+            fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self {
+                (x + y) as Self
+            }
+        }
+    };
 }
 
-#[sealed]
-impl PrimInt for u16 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for u32 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for u64 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for u128 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for i8 {
-    type PromotedType = i16;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for i16 {
-    type PromotedType = i32;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for i32 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for i64 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for i128 {
-    type PromotedType = Self;
-
-    #[inline]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for usize {
-    type PromotedType = Self;
-
-    #[inline]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-#[sealed]
-impl PrimInt for isize {
-    type PromotedType = Self;
-
-    #[inline]
-    fn add_i218_usize_promoted(left: i128, right: usize) -> Self {
-        (left as Self::PromotedType + right as Self::PromotedType) as Self
-    }
-
-    #[inline]
-    fn i128_as_k(val: i128) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn i128_as_k_promoted(val: i128) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn usize_as_k_promoted(val: usize) -> Self::PromotedType {
-        val as Self::PromotedType
-    }
-
-    #[inline]
-    fn promoted_as_k(val: Self::PromotedType) -> Self {
-        val as Self
-    }
-
-    #[inline]
-    fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self::PromotedType {
-        x + y
-    }
-}
-
-// use super::key_index::KeyIndex;
-use std::fmt::Debug;
-use std::hash::Hash;
+// NOTE: unsigned ints don't need promotion during addition
+impl_prim_int!(type=u8, promoted_type=Self);
+impl_prim_int!(type=u16, promoted_type=Self);
+impl_prim_int!(type=u32, promoted_type=Self);
+impl_prim_int!(type=u64, promoted_type=Self);
+impl_prim_int!(type=u128, promoted_type=Self);
+impl_prim_int!(type=usize, promoted_type=Self);
+
+// NOTE: Promotion is needed for cases like `i8::MIN + 255`, since 255 does not fit in i8
+impl_prim_int!(type=i8, promoted_type=i16);
+impl_prim_int!(type=i16, promoted_type=i32);
+// No promotion needed, `i32::MIN + i32::MAX-1` will not truncate. TABLE_SIZE is at most `i32::MAX + 1`, see
+// [`STATIC_ASSERT_LIMIT_SIZE_TO_I32_MAX`]
+impl_prim_int!(type=i32, promoted_type=Self);
+impl_prim_int!(type=i64, promoted_type=Self);
+impl_prim_int!(type=i128, promoted_type=Self);
+
+// isize can be i16, i132, or i64. Using i64 since it work for all cases
+impl_prim_int!(type=isize, promoted_type=i64);
 
 #[sealed]
 pub trait Key<const TABLE_MIN_VALUE: i128>:
@@ -463,139 +100,36 @@ pub trait Key<const TABLE_MIN_VALUE: i128>:
     fn key_index(&self) -> usize;
 }
 
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for u8 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u8) as usize
-    }
+macro_rules! impl_key {
+    ($prim_type:ty) => {
+        #[sealed]
+        impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for $prim_type {
+            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_sign_loss)]
+            #[inline]
+            fn key_index(&self) -> usize {
+                // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
+                // NOTE: No promotion happens for subtractions of unsigned types because `key >= TABLE_MIN_VALUE``
+                // NOTE: Promotion _needed_ for {i8, i16, isize} because the difference could exceed $prim_type::MAX
+                (<$prim_type>::as_promoted(*self) - <$prim_type>::i128_as_promoted(TABLE_MIN_VALUE))
+                    as usize
+            }
+        }
+    };
 }
 
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for u16 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u16) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for u32 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for u64 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        (*self - TABLE_MIN_VALUE as u64) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for u128 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        // NOTE: i128 can't represent u128::MAX, but it's value will still fit in u128
-        (*self - TABLE_MIN_VALUE as u128) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for i8 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: Promotion to i16 _needed_ for subtractions because difference could exceed i8::MAX
-        (i16::from(*self) - TABLE_MIN_VALUE as i16) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for i16 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: Promotion to i32 _needed_ for subtractions because difference could exceed i16::MAX
-        (i32::from(*self) - TABLE_MIN_VALUE as i32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for i32 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i32
-        (*self - TABLE_MIN_VALUE as i32) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for i64 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i64
-        (*self - TABLE_MIN_VALUE as i64) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for i128 {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in i128
-        (*self - TABLE_MIN_VALUE) as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for usize {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions of unsigned types because key >= TABLE_MIN_VALUE
-        *self - TABLE_MIN_VALUE as usize
-    }
-}
-
-#[sealed]
-impl<const TABLE_MIN_VALUE: i128> Key<TABLE_MIN_VALUE> for isize {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn key_index(&self) -> usize {
-        // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
-        // NOTE: No promotion needed for subtractions because difference will be at most i32::MAX - fits in isize see
-        // `STATIC_ASSERT_ISIZE_FITS_I32`
-        (*self - TABLE_MIN_VALUE as isize) as usize
-    }
-}
+impl_key!(u8);
+impl_key!(u16);
+impl_key!(u32);
+impl_key!(u64);
+impl_key!(u128);
+impl_key!(usize);
+impl_key!(i8);
+impl_key!(i16);
+impl_key!(i32);
+impl_key!(i64);
+impl_key!(i128);
+impl_key!(isize);
 
 #[cfg(test)]
 mod tests {

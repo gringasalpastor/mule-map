@@ -412,13 +412,13 @@ where
         }
 
         let promoted_sum = K::add_promoted(
-            K::i128_as_k_promoted(TABLE_MIN_VALUE),
-            K::usize_as_k_promoted(const { TABLE_SIZE.saturating_sub(1) }),
+            K::i128_as_promoted(TABLE_MIN_VALUE),
+            K::usize_as_promoted(const { TABLE_SIZE.saturating_sub(1) }),
         );
 
         // NOTE: `TABLE_MIN_VALUE + TABLE_SIZE - 1` and TABLE_MIN_VALUE must fit into a key type, K (with correct
         // promotion during add for signed ints)
-        key <= K::promoted_as_k(promoted_sum) && key >= K::i128_as_k(TABLE_MIN_VALUE)
+        key <= promoted_sum && key >= K::i128_as_k(TABLE_MIN_VALUE)
     }
 
     #[inline]
