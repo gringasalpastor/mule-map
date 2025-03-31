@@ -39,6 +39,7 @@ dependencies = [
  "fnv_rs",
  "num-traits",
  "sealed",
+ "test-utils",
 ]
 
 [[package]]
@@ -110,6 +111,10 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "test-utils"
+version = "0.1.0"
 
 [[package]]
 name = "unicode-ident"

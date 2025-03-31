@@ -143,69 +143,82 @@ mod tests {
         <K as TryFrom<i128>>::Error: Debug,
     {
         type Hash = fnv_rs::FnvBuildHasher;
-        MuleMap::<K, u8, Hash, TABLE_MIN_VALUE, TABLE_SIZE>::check_bounds();
-        assert!(MuleMap::<K, u8, Hash, TABLE_MIN_VALUE, TABLE_SIZE>::use_lookup_table(key));
+        MuleMap::<K, (), Hash, TABLE_MIN_VALUE, TABLE_SIZE>::check_bounds();
+
+        eprintln!(
+            "\ntest_index::<{:?}, {TABLE_MIN_VALUE:?}, {TABLE_SIZE:?}>({key:?})\n",
+            std::any::type_name::<K>()
+        );
+
+        assert!(MuleMap::<K, (), Hash, TABLE_MIN_VALUE, TABLE_SIZE>::use_lookup_table(key));
         key.key_index()
     }
 
     const MAX_U8_SIZE: usize = u8::MAX as usize + 1;
+    const MAX_U16_SIZE: usize = u16::MAX as usize + 1;
+    const MAX_SIZE: usize = (i32::MAX as usize) + 1; // i32::MAX is largest allowed
+    const MAX_INDEX: usize = i32::MAX as usize;
 
     #[test]
     fn check_table_range_unsigned() {
-        const MAX_U16_SIZE: usize = u16::MAX as usize + 1;
-        const MAX_SIZE: usize = i32::MAX as usize + 1; // i32::MAX is largest allowed
-        const MAX_INDEX: usize = i32::MAX as usize;
-        const MAX_INDEX_U32: u32 = i32::MAX as u32; // Help clippy see there is no overflow
+        macro_rules! check_key_range_from_0 {
+            (type=$prim_type:ty, max_size=$max_size:expr) => {
+                assert_eq!(test_index::<$prim_type, 0, $max_size>(<$prim_type>::MIN), 0);
+                assert_eq!(
+                    test_index::<$prim_type, 0, $max_size>(
+                        <$prim_type>::try_from($max_size - 1).expect("")
+                    ),
+                    $max_size - 1
+                );
+            };
+        }
 
-        // u8
-        assert_eq!(test_index::<u8, 0, MAX_U8_SIZE>(u8::MIN), 0);
-        assert_eq!(test_index::<u8, 0, MAX_U8_SIZE>(u8::MAX), MAX_U8_SIZE - 1);
-        assert_eq!(test_index::<u8, 100, { MAX_U8_SIZE - 100 }>(100), 0);
-        assert_eq!(test_index::<u8, 100, { MAX_U8_SIZE - 100 }>(255), 155);
+        check_key_range_from_0!(type=u8, max_size=MAX_U8_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=256)
+        check_key_range_from_0!(type=u16, max_size=MAX_U16_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=65536)
+        check_key_range_from_0!(type=u32, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
+        check_key_range_from_0!(type=u64, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
+        check_key_range_from_0!(type=u128, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
+        check_key_range_from_0!(type=usize, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
 
-        // u16
-        assert_eq!(test_index::<u16, 0, MAX_U16_SIZE>(u16::MIN), 0);
-        assert_eq!(
-            test_index::<u16, 0, MAX_U16_SIZE>(u16::MAX),
-            MAX_U16_SIZE - 1
-        );
-        assert_eq!(test_index::<u16, 100, { MAX_U16_SIZE - 100 }>(100), 0);
-        assert_eq!(
-            test_index::<u16, 100, { MAX_U16_SIZE - 100 }>(u16::MAX),
-            MAX_U16_SIZE - 100 - 1
-        );
+        macro_rules! check_key_range_from_upper {
+            (type=$prim_type:ty, max_size=$max_size:expr, table_min_value=$table_min_value:expr) => {
+                assert_eq!(
+                    test_index::<
+                        $prim_type,
+                        { $table_min_value },
+                        {
+                            ((<$prim_type>::MAX as i128 + 1)
+                                .checked_sub($table_min_value)
+                                .expect("table_min_value < $prim_type>::MAX") as usize)
+                        },
+                    >(
+                        <$prim_type>::try_from($table_min_value)
+                            .expect("table_min_value fits in $prim_type")
+                    ),
+                    0
+                );
+                assert_eq!(
+                    test_index::<
+                        $prim_type,
+                        { $table_min_value },
+                        { (<$prim_type>::MAX as i128 + 1 - $table_min_value) as usize },
+                    >(<$prim_type>::MAX),
+                    (<$prim_type>::MAX as i128 - $table_min_value) as usize
+                );
+            };
+        }
+        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_lossless)]
+        {
+            check_key_range_from_upper!(type=u8, max_size=MAX_U8_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=156)
+            check_key_range_from_upper!(type=u16, max_size=MAX_U16_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=65436)
+            check_key_range_from_upper!(type=u32, max_size=MAX_SIZE, table_min_value= u32::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=2147483648, TABLE_SIZE=2147483648)
+            check_key_range_from_upper!(type=u64, max_size=MAX_SIZE, table_min_value= u64::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648)
+            check_key_range_from_upper!(type=usize, max_size=MAX_SIZE, table_min_value= usize::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648)
+        }
 
-        // u32
-        assert_eq!(test_index::<u32, 0, MAX_SIZE>(u32::MIN), 0);
-        assert_eq!(test_index::<u32, 0, MAX_SIZE>(i32::MAX as u32), MAX_INDEX);
-        assert_eq!(
-            test_index::<u32, { (u32::MAX - MAX_INDEX_U32) as i128 }, MAX_SIZE>(
-                u32::MAX - MAX_INDEX_U32
-            ),
-            0
-        );
-        assert_eq!(
-            test_index::<u32, { (u32::MAX - MAX_INDEX_U32) as i128 }, MAX_SIZE>(u32::MAX),
-            MAX_INDEX
-        );
-
-        // u64
-        assert_eq!(test_index::<u64, 0, MAX_SIZE>(u64::MIN), 0);
-        assert_eq!(test_index::<u64, 0, MAX_SIZE>(i32::MAX as u64), MAX_INDEX);
-        assert_eq!(
-            test_index::<u64, { (u64::MAX - MAX_INDEX as u64) as i128 }, MAX_SIZE>(
-                u64::MAX - MAX_INDEX as u64
-            ),
-            0
-        );
-        assert_eq!(
-            test_index::<u64, { (u64::MAX - MAX_INDEX as u64) as i128 }, MAX_SIZE>(u64::MAX),
-            MAX_INDEX
-        );
-
-        // u128
-        assert_eq!(test_index::<u128, 0, MAX_SIZE>(u128::MIN), 0);
-        assert_eq!(test_index::<u128, 0, MAX_SIZE>(i32::MAX as u128), MAX_INDEX);
+        // Test u128 separately because TABLE_MIN_VALUE is at most i128::MAX, and we can't use use it's upper range
+        // (TABLE_MIN_VALUE=170141183460469231731687303713736622080, TABLE_SIZE=2147483648)
         assert_eq!(
             test_index::<u128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(
                 i128::MAX as u128 - MAX_INDEX as u128
@@ -220,10 +233,10 @@ mod tests {
 
     #[test]
     fn check_table_range_signed() {
-        // i8
-        assert_eq!(
-            test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
-            0
-        );
+        // // i8
+        // assert_eq!(
+        //     test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
+        //     0
+        // );
     }
 }

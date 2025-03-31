@@ -249,7 +249,7 @@ where
     /// mule_map.bump_int(999_999);
     /// assert_eq!(mule_map[10], 1);
     /// assert_eq!(mule_map[999_999], 1);
-    /// assert!(std::panic::catch_unwind(|| mule_map[123]).is_err());
+    /// assert!(test_utils::catch_unwind_silent(|| mule_map[123]).is_err());
     ///
     /// ```
     ///
@@ -1082,10 +1082,10 @@ mod tests {
         type OkRange2 = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 1, { u8::MAX as usize }>;
         type ZeroSize = MuleMap<u8, i32, fnv_rs::FnvBuildHasher, 0, { u8::MIN as usize }>;
 
-        assert!(std::panic::catch_unwind(BadRange::new).is_err());
-        assert!(std::panic::catch_unwind(BadRange2::new).is_err());
-        assert!(std::panic::catch_unwind(OkRange::new).is_ok());
-        assert!(std::panic::catch_unwind(OkRange2::new).is_ok());
-        assert!(std::panic::catch_unwind(ZeroSize::new).is_ok());
+        assert!(test_utils::catch_unwind_silent(BadRange::new).is_err());
+        assert!(test_utils::catch_unwind_silent(BadRange2::new).is_err());
+        assert!(test_utils::catch_unwind_silent(OkRange::new).is_ok());
+        assert!(test_utils::catch_unwind_silent(OkRange2::new).is_ok());
+        assert!(test_utils::catch_unwind_silent(ZeroSize::new).is_ok());
     }
 }
