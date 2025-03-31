@@ -143,13 +143,8 @@ mod tests {
         <K as TryFrom<i128>>::Error: Debug,
     {
         type Hash = fnv_rs::FnvBuildHasher;
+
         MuleMap::<K, (), Hash, TABLE_MIN_VALUE, TABLE_SIZE>::check_bounds();
-
-        eprintln!(
-            "\ntest_index::<{:?}, {TABLE_MIN_VALUE:?}, {TABLE_SIZE:?}>({key:?})\n",
-            std::any::type_name::<K>()
-        );
-
         assert!(MuleMap::<K, (), Hash, TABLE_MIN_VALUE, TABLE_SIZE>::use_lookup_table(key));
         key.key_index()
     }
@@ -160,26 +155,7 @@ mod tests {
     const MAX_INDEX: usize = i32::MAX as usize;
 
     #[test]
-    fn check_table_range_unsigned() {
-        macro_rules! check_key_range_from_0 {
-            (type=$prim_type:ty, max_size=$max_size:expr) => {
-                assert_eq!(test_index::<$prim_type, 0, $max_size>(<$prim_type>::MIN), 0);
-                assert_eq!(
-                    test_index::<$prim_type, 0, $max_size>(
-                        <$prim_type>::try_from($max_size - 1).expect("")
-                    ),
-                    $max_size - 1
-                );
-            };
-        }
-
-        check_key_range_from_0!(type=u8, max_size=MAX_U8_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=256)
-        check_key_range_from_0!(type=u16, max_size=MAX_U16_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=65536)
-        check_key_range_from_0!(type=u32, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
-        check_key_range_from_0!(type=u64, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
-        check_key_range_from_0!(type=u128, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
-        check_key_range_from_0!(type=usize, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648)
-
+    fn check_key_range_from_upper() {
         macro_rules! check_key_range_from_upper {
             (type=$prim_type:ty, max_size=$max_size:expr, table_min_value=$table_min_value:expr) => {
                 assert_eq!(
@@ -210,15 +186,22 @@ mod tests {
         #[allow(clippy::cast_sign_loss)]
         #[allow(clippy::cast_lossless)]
         {
-            check_key_range_from_upper!(type=u8, max_size=MAX_U8_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=156)
-            check_key_range_from_upper!(type=u16, max_size=MAX_U16_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=65436)
-            check_key_range_from_upper!(type=u32, max_size=MAX_SIZE, table_min_value= u32::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=2147483648, TABLE_SIZE=2147483648)
-            check_key_range_from_upper!(type=u64, max_size=MAX_SIZE, table_min_value= u64::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648)
-            check_key_range_from_upper!(type=usize, max_size=MAX_SIZE, table_min_value= usize::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648)
+            check_key_range_from_upper!(type=i8, max_size=MAX_U8_SIZE, table_min_value= -28); // (TABLE_MIN_VALUE= -28, TABLE_SIZE= 156, key= {-28, 127} )
+            check_key_range_from_upper!(type=i16, max_size=MAX_U16_SIZE, table_min_value= -28); // (TABLE_MIN_VALUE= -28, TABLE_SIZE= 32796>, key= {-28, 12327677} )
+            check_key_range_from_upper!(type=i32, max_size=MAX_SIZE, table_min_value= i32::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE= 0, TABLE_SIZE= 2147483648, key= {0, 2147483647} )
+            check_key_range_from_upper!(type=i64, max_size=MAX_SIZE, table_min_value= i64::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE= 9223372034707292160, TABLE_SIZE= 2147483648>, key= {9223372034707292160, 9223372036854775807} )
+            check_key_range_from_upper!(type=isize, max_size=MAX_SIZE, table_min_value= isize::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE= 9223372034707292160, TABLE_SIZE= 2147483648>, key= {9223372034707292160, 9223372036854775807} )
+
+            check_key_range_from_upper!(type=u8, max_size=MAX_U8_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=156, key= {100, 255})
+            check_key_range_from_upper!(type=u16, max_size=MAX_U16_SIZE, table_min_value= 100); // (TABLE_MIN_VALUE=100, TABLE_SIZE=65436, key= {100, 65535})
+            check_key_range_from_upper!(type=u32, max_size=MAX_SIZE, table_min_value= u32::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=2147483648, TABLE_SIZE=2147483648, key= {2147483648, 4294967295})
+            check_key_range_from_upper!(type=u64, max_size=MAX_SIZE, table_min_value= u64::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648, key= {18446744071562067968, 18446744073709551615})
+            check_key_range_from_upper!(type=usize, max_size=MAX_SIZE, table_min_value= usize::MAX as i128 - (MAX_SIZE - 1)  as i128); // (TABLE_MIN_VALUE=18446744071562067968, TABLE_SIZE=2147483648, key= {18446744071562067968, 18446744073709551615})
         }
 
         // Test u128 separately because TABLE_MIN_VALUE is at most i128::MAX, and we can't use use it's upper range
-        // (TABLE_MIN_VALUE=170141183460469231731687303713736622080, TABLE_SIZE=2147483648)
+        // NOTE: keys are the same as i128, because our keys are limited by the size of i128
+        // (TABLE_MIN_VALUE=170141183460469231731687303713736622080, TABLE_SIZE=2147483648 key= {170141183460469231731687303713736622080, 170141183460469231731687303715884105727})
         assert_eq!(
             test_index::<u128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(
                 i128::MAX as u128 - MAX_INDEX as u128
@@ -229,14 +212,58 @@ mod tests {
             test_index::<u128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(i128::MAX as u128),
             MAX_INDEX
         );
+
+        // Test i128 separately because i128::MAX + 1 breaks the macro
+        // (TABLE_MIN_VALUE=170141183460469231731687303713736622080, TABLE_SIZE=2147483648 key= {170141183460469231731687303713736622080, 170141183460469231731687303715884105727})
+        assert_eq!(
+            test_index::<i128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(
+                i128::MAX - MAX_INDEX as i128
+            ),
+            0
+        );
+        assert_eq!(
+            test_index::<i128, { i128::MAX - MAX_INDEX as i128 }, MAX_SIZE>(i128::MAX),
+            MAX_INDEX
+        );
     }
 
     #[test]
-    fn check_table_range_signed() {
-        // // i8
-        // assert_eq!(
-        //     test_index::<i8, { i8::MIN as i128 }, MAX_U8_SIZE>(i8::MIN),
-        //     0
-        // );
+    fn check_table_range_from_min() {
+        macro_rules! check_key_range_from_min {
+            (type=$prim_type:ty, max_size=$max_size:expr) => {
+                assert_eq!(
+                    test_index::<$prim_type, { <$prim_type>::MIN as i128 }, $max_size>(
+                        <$prim_type>::MIN
+                    ),
+                    0
+                );
+                assert_eq!(
+                    test_index::<$prim_type, { <$prim_type>::MIN as i128 }, $max_size>(
+                        (<$prim_type>::MIN as i128 + $max_size as i128 - 1) as $prim_type
+                    ),
+                    $max_size - 1
+                );
+            };
+        }
+
+        #[allow(clippy::cast_lossless)]
+        #[allow(clippy::cast_possible_wrap)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        {
+            check_key_range_from_min!(type=i8, max_size=MAX_U8_SIZE); // (TABLE_MIN_VALUE= -128, TABLE_SIZE= 256, key= {-128, 127} )
+            check_key_range_from_min!(type=i16, max_size=MAX_U16_SIZE); // (TABLE_MIN_VALUE= -32768, TABLE_SIZE= 65536, key= {-32768, 32767} )
+            check_key_range_from_min!(type=i32, max_size=MAX_SIZE); // (TABLE_MIN_VALUE= -2147483648, TABLE_SIZE= 2147483648>, key= {-2147483648, -1} )
+            check_key_range_from_min!(type=i64, max_size=MAX_SIZE); // (TABLE_MIN_VALUE= -9223372036854775808, TABLE_SIZE=2147483648> , key= {-9223372036854775808, -9223372034707292161} )
+            check_key_range_from_min!(type=i128, max_size=MAX_SIZE); // (TABLE_MIN_VALUE= -170141183460469231731687303715884105728, TABLE_SIZE= 2147483648>, key= {-170141183460469231731687303715884105728, -170141183460469231731687303713736622081} )
+            check_key_range_from_min!(type=isize, max_size=MAX_SIZE); // (TABLE_MIN_VALUE= -9223372036854775808, TABLE_SIZE=2147483648> , key= {-9223372036854775808, -9223372034707292161} )
+
+            check_key_range_from_min!(type=u8, max_size=MAX_U8_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=256, key= {0, 255})
+            check_key_range_from_min!(type=u16, max_size=MAX_U16_SIZE); // (TABLE_MIN_VALUE=0, TABLE_SIZE=65536, key= {0, 65535})
+            check_key_range_from_min!(type=u32, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648, key= {0, 2147483647})
+            check_key_range_from_min!(type=u64, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648, key= {0, 2147483647})
+            check_key_range_from_min!(type=u128, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648, key= {0, 2147483647})
+            check_key_range_from_min!(type=usize, max_size=MAX_SIZE ); // (TABLE_MIN_VALUE=0, TABLE_SIZE=2147483648, key= {0, 2147483647})
+        }
     }
 }
