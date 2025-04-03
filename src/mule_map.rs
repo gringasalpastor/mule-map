@@ -114,15 +114,16 @@ impl NonZeroInt for std::num::NonZeroUsize {
 /// ## Differences between [`HashMap`] and [`MuleMap`]
 ///
 /// - **The key, `K`, must be an integer type.** - The key is directly mapped to the index in the lookup, so it must be
-///     an integer.
+///   an integer.
 /// - **The key, `K`, is passed by value** - Because it is a primitive integer type.
 /// - **The hash builder, `S`,  does not have a default** - You must specify your hash builder. The assumption being
-///     that if you need better performance you will likely also want to use a custom hash function.
+///   that if you need better performance you will likely also want to use a custom hash function.
 /// - **`TABLE_MIN_VALUE` and `TABLE_SIZE`** -  If a key is between `TABLE_MIN_VALUE` and `TABLE_MIN_VALUE +
-///     TABLE_SIZE` (exclusive), then the value will be stored directly in the lookup table, instead of using the `HashMap`.
-///     **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so
-///     `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
-///     can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
+///  TABLE_SIZE` (exclusive), then the value will be stored directly in the lookup table, instead of using the `HashMap`.
+///
+/// **NOTE:** Currently the type of a const generic can’t depend on another generic type argument, so
+///  `TABLE_MIN_VALUE` can’t use the same type as the key. Because of this, We are using [`i128`], but that means we
+///  can’t represent values near [`u128::MAX`]. Hopefully having frequent keys near [`u128::MAX`] is extremely rare.
 ///
 /// ## Performance
 ///

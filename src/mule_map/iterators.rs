@@ -776,7 +776,6 @@ impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIter
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
@@ -811,7 +810,6 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
     i128: AsPrimitive<K>,
     usize: AsPrimitive<K>,
 {
