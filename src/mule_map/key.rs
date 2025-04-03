@@ -93,6 +93,8 @@ impl_prim_int!(type=i128, promoted_type=Self);
 // isize can be i16, i132, or i64. Using i64 since it work for all cases
 impl_prim_int!(type=isize, promoted_type=i64);
 
+/// Defines the primitives that can be used as a key ([`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`usize`], [`i8`],
+/// [`i16`], [`i32`], [`i64`], [`i128`], and [`isize`])
 #[sealed]
 pub trait Key<const TABLE_MIN_VALUE: i128>:
     PrimInt + Eq + Hash + TryFrom<i128> + Debug + 'static

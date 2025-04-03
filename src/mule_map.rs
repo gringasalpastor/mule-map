@@ -13,7 +13,7 @@ use std::ops::AddAssign;
 
 pub(crate) mod entry;
 pub(crate) mod iterators;
-mod key;
+pub(crate) mod key;
 
 #[sealed]
 #[doc(hidden)]
