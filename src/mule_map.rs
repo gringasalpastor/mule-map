@@ -35,77 +35,29 @@ pub trait NonZeroInt {
     }
 }
 
-#[sealed]
-impl NonZeroInt for std::num::NonZeroI128 {
-    const ONE: std::num::NonZeroI128 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = i128;
+macro_rules! impl_non_zero {
+    (non_zero=$non_zero_type:ty, underlying=$underlying_type:ty) => {
+        #[sealed]
+        impl NonZeroInt for $non_zero_type {
+            const ONE: $non_zero_type = const { NonZero::new(1).expect("1 is not 0") };
+            type UnderlyingType = $underlying_type;
+        }
+    };
 }
 
-#[sealed]
-impl NonZeroInt for std::num::NonZeroI16 {
-    const ONE: std::num::NonZeroI16 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = i16;
-}
+impl_non_zero!(non_zero = std::num::NonZeroI8, underlying = i8);
+impl_non_zero!(non_zero = std::num::NonZeroI16, underlying = i16);
+impl_non_zero!(non_zero = std::num::NonZeroI32, underlying = i32);
+impl_non_zero!(non_zero = std::num::NonZeroI64, underlying = i64);
+impl_non_zero!(non_zero = std::num::NonZeroI128, underlying = i128);
+impl_non_zero!(non_zero = std::num::NonZeroIsize, underlying = isize);
 
-#[sealed]
-impl NonZeroInt for std::num::NonZeroI32 {
-    const ONE: std::num::NonZeroI32 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = i32;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroI64 {
-    const ONE: std::num::NonZeroI64 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = i64;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroI8 {
-    const ONE: std::num::NonZeroI8 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = i8;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroIsize {
-    const ONE: std::num::NonZeroIsize = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = isize;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroU128 {
-    const ONE: std::num::NonZeroU128 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = u128;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroU16 {
-    const ONE: std::num::NonZeroU16 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = u16;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroU32 {
-    const ONE: std::num::NonZeroU32 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = u32;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroU64 {
-    const ONE: std::num::NonZeroU64 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = u64;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroU8 {
-    const ONE: std::num::NonZeroU8 = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = u8;
-}
-
-#[sealed]
-impl NonZeroInt for std::num::NonZeroUsize {
-    const ONE: std::num::NonZeroUsize = const { NonZero::new(1).expect("1 is not 0") };
-    type UnderlyingType = usize;
-}
+impl_non_zero!(non_zero = std::num::NonZeroU8, underlying = u8);
+impl_non_zero!(non_zero = std::num::NonZeroU16, underlying = u16);
+impl_non_zero!(non_zero = std::num::NonZeroU32, underlying = u32);
+impl_non_zero!(non_zero = std::num::NonZeroU64, underlying = u64);
+impl_non_zero!(non_zero = std::num::NonZeroU128, underlying = u128);
+impl_non_zero!(non_zero = std::num::NonZeroUsize, underlying = usize);
 
 /// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed
 /// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
