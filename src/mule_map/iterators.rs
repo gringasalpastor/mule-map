@@ -1,21 +1,20 @@
 use crate::MuleMap;
 use crate::mule_map::Key;
-use num_traits::AsPrimitive;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::BuildHasher;
 use std::iter::Enumerate;
 use std::iter::FilterMap;
-use std::ops::Add;
 
 #[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
-    TABLE_MIN_VALUE.as_() + index.as_()
+    K::add_promoted(
+        K::i128_as_promoted(TABLE_MIN_VALUE),
+        K::usize_as_promoted(index),
+    )
 }
 
 // MuleMapIter
@@ -41,9 +40,7 @@ fn filter_map_fn<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<(K, &V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_ref())
 }
@@ -56,9 +53,7 @@ pub struct Iter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -127,9 +122,7 @@ fn filter_map_fn_mut<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, &mut V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_mut())
 }
@@ -142,9 +135,7 @@ pub struct IterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usiz
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -202,9 +193,7 @@ fn filter_map_fn_into<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, Option<V>),
 ) -> Option<(K, V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
 }
@@ -220,9 +209,7 @@ pub struct IntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -275,9 +262,7 @@ fn filter_map_fn_drain<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
 }
@@ -293,9 +278,7 @@ pub struct DrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: us
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     DrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -369,9 +352,7 @@ fn filter_map_fn_keys<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<K>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     value
         .as_ref()
@@ -386,9 +367,7 @@ pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Keys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -441,9 +420,7 @@ pub struct IntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -505,10 +482,6 @@ pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -571,10 +544,6 @@ pub struct ValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: us
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -635,10 +604,6 @@ pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -684,8 +649,6 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
 {
     #[inline]
     pub fn iter(&self) -> Iter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
@@ -776,8 +739,6 @@ impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIter
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
 {
     type Item = (K, &'a V);
     type IntoIter = Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -793,8 +754,6 @@ impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIter
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
 {
     type Item = (K, &'a mut V);
     type IntoIter = IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -810,8 +769,6 @@ impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
 where
     K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
 {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -861,6 +818,105 @@ mod tests {
         mule_map_keys.bump_int(999_999);
         for k in mule_map_keys.keys() {
             assert!([10, 11, 999_999, 999_998].contains(&k));
+        }
+    }
+
+    #[test]
+    fn test_key_from_index() {
+        macro_rules! check_key_from_index_small {
+            (type=$prim_type:ty) => {
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(0),
+                    <$prim_type>::MIN
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(
+                        (1 << (<$prim_type>::BITS + 1)) - 1
+                    ),
+                    <$prim_type>::MAX
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 }>(0),
+                    <$prim_type>::MAX
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 / 2 }>(0),
+                    <$prim_type>::MAX / 2
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 / 2 }>(
+                        (<$prim_type>::MAX / 2) as usize + 1
+                    ),
+                    <$prim_type>::MAX
+                );
+            };
+        }
+
+        check_key_from_index_small!(type=u8);
+        check_key_from_index_small!(type=u16);
+        check_key_from_index_small!(type=i8);
+        check_key_from_index_small!(type=i16);
+
+        macro_rules! check_key_from_index_large {
+            (type=$prim_type:ty) => {
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(0),
+                    <$prim_type>::MIN
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(i32::MAX as usize),
+                    (<$prim_type>::MIN as i128 + i32::MAX as i128) as $prim_type
+                );
+
+                {
+                    const fn largest_table_min() -> i128 {
+                        if (<$prim_type>::BITS == 128) {
+                            return i128::MAX;
+                        }
+                        <$prim_type>::MAX as i128
+                    }
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() }>(0),
+                        largest_table_min() as $prim_type
+                    );
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() - (i32::MAX as i128) }>(
+                            0
+                        ),
+                        (largest_table_min() - (i32::MAX as i128)) as $prim_type
+                    );
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() - (i32::MAX as i128) }>(
+                            i32::MAX as usize
+                        ),
+                        largest_table_min() as $prim_type
+                    );
+                }
+            };
+        }
+
+        #[allow(clippy::cast_lossless)]
+        #[allow(clippy::cast_possible_wrap)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        {
+            check_key_from_index_large!(type=u32);
+            check_key_from_index_large!(type=u64);
+            check_key_from_index_large!(type=u128);
+            check_key_from_index_large!(type=usize);
+
+            check_key_from_index_large!(type=i32);
+            check_key_from_index_large!(type=i64);
+            check_key_from_index_large!(type=i128);
+            check_key_from_index_large!(type=isize);
         }
     }
 }
