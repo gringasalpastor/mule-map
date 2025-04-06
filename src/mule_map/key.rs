@@ -22,6 +22,7 @@ macro_rules! impl_prim_int {
             // NOTE: This could almost use `Self::PromotedType::from(val)` if not for isize -> i64, which is also
             // lossless because i64 is the largest type isize can be.
             #[inline]
+            #[must_use]
             #[allow(clippy::cast_lossless)]
             fn as_promoted(val: Self) -> Self::PromotedType {
                 val as Self::PromotedType
@@ -31,6 +32,7 @@ macro_rules! impl_prim_int {
             //
             // CAUTION: Don't use with other values that might truncate
             #[inline]
+            #[must_use]
             #[allow(clippy::cast_possible_truncation)]
             #[allow(clippy::cast_sign_loss)]
             fn i128_as_k(val: i128) -> Self {
@@ -42,6 +44,7 @@ macro_rules! impl_prim_int {
             //
             // CAUTION: Don't use with other values that might truncate
             #[inline]
+            #[must_use]
             #[allow(clippy::cast_possible_truncation)]
             #[allow(clippy::cast_sign_loss)]
             fn i128_as_promoted(val: i128) -> Self::PromotedType {
@@ -53,6 +56,7 @@ macro_rules! impl_prim_int {
             //
             // CAUTION: Don't use with other values that might truncate
             #[inline]
+            #[must_use]
             #[allow(clippy::cast_possible_truncation)]
             #[allow(clippy::cast_possible_wrap)]
             fn usize_as_promoted(val: usize) -> Self::PromotedType {
@@ -65,6 +69,7 @@ macro_rules! impl_prim_int {
             //
             // CAUTION: Don't use with other values that might truncate
             #[inline]
+            #[must_use]
             #[allow(clippy::cast_possible_truncation)]
             fn add_promoted(x: Self::PromotedType, y: Self::PromotedType) -> Self {
                 (x + y) as Self
@@ -109,6 +114,7 @@ macro_rules! impl_key {
             #[allow(clippy::cast_possible_truncation)]
             #[allow(clippy::cast_sign_loss)]
             #[inline]
+            #[must_use]
             fn key_index(&self) -> usize {
                 // NOTE: Table size will not exceed i32::MAX so cast to usize will not truncate
                 // NOTE: No promotion happens for subtractions of unsigned types because `key >= TABLE_MIN_VALUE``

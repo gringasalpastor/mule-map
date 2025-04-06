@@ -20,6 +20,7 @@ pub(crate) mod key;
 pub trait NonZeroInt {
     type UnderlyingType;
     const ONE: Self;
+    #[must_use]
     #[inline]
     fn checked_add(self, other: Self::UnderlyingType) -> Option<Self>
     where
@@ -139,6 +140,8 @@ where
     /// See: [`MuleMap::with_capacity_and_hasher`]
     ///
     /// Analogous to [`HashMap::default`]
+    #[must_use]
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -170,6 +173,8 @@ where
     ///
     /// assert!(mule_map1 ==  mule_map2)
     /// ```
+    #[must_use]
+    #[inline]
     fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
         self.hash_map == other.hash_map && self.table == other.table
     }
@@ -209,6 +214,7 @@ where
     /// # Panics
     ///
     /// Panics if the key is not present in the `MuleMap`.
+    #[must_use]
     #[inline]
     fn index(&self, key: K) -> &V {
         self.get(key).expect("No entry found for key")
@@ -297,6 +303,8 @@ where
     /// assert_eq!(map1, mule_map);
     /// assert_eq!(map2, mule_map);
     /// ```
+    #[must_use]
+    #[inline]
     fn from(arr: [(K, V); N]) -> Self {
         let mut map = Self::default();
         for (key, val) in arr {
@@ -331,6 +339,8 @@ where
     ///
     /// assert_eq!(map1, mule_map);
     /// ```
+    #[must_use]
+    #[inline]
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut map = Self::default();
         map.extend(iter);
@@ -357,8 +367,8 @@ where
 
     const STATIC_ASSERT_ISIZE_FITS_I32: () = assert!(isize::MAX as u128 >= i32::MAX as u128);
 
-    #[inline]
     #[must_use]
+    #[inline]
     pub(crate) fn use_lookup_table(key: K) -> bool {
         if const { TABLE_SIZE == 0 } {
             return false;
