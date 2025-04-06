@@ -575,8 +575,8 @@ where
     /// ```
     /// let mut map = mule_map::MuleMap::<_, _, fnv_rs::FnvBuildHasher>::from([(1, 1602), (2, 1807), (999_999, 1691), (999_998, 1800)]);
     ///
-    /// assert_eq!(map.get_disjoint_mut([&1, &999_999]), [Some(&mut 1602), Some(&mut 1691)]);
-    /// assert_eq!(map.get_disjoint_mut([&2, &4, &999_998, &999_990]), [Some(&mut 1807), None, Some(&mut 1800), None]);
+    /// assert_eq!(map.get_disjoint_mut([1, 999_999]), [Some(&mut 1602), Some(&mut 1691)]);
+    /// assert_eq!(map.get_disjoint_mut([2, 4, 999_998, 999_990]), [Some(&mut 1807), None, Some(&mut 1800), None]);
     /// ```
     ///
     /// # Panics
@@ -584,16 +584,17 @@ where
     ///
     /// Analogous to [`HashMap::get_disjoint_mut`]
     #[allow(clippy::reversed_empty_ranges)]
-    pub fn get_disjoint_mut<const N: usize>(&mut self, ks: [&K; N]) -> [Option<&'_ mut V>; N]
+    pub fn get_disjoint_mut<const N: usize>(&mut self, ks: [K; N]) -> [Option<&'_ mut V>; N]
     where
         K: Key<TABLE_MIN_VALUE>,
     {
         let mut key_indices = [const { 0..0 }; N];
+        let references: [&K; N] = std::array::from_fn(|i| &ks[i]);
 
-        let mut result = self.hash_map.get_disjoint_mut(ks);
+        let mut result = self.hash_map.get_disjoint_mut(references);
 
         for (i, &key) in ks.iter().enumerate() {
-            if Self::use_lookup_table(*key) {
+            if Self::use_lookup_table(key) {
                 #[allow(clippy::range_plus_one)]
                 {
                     key_indices[i] = key.key_index()..key.key_index() + 1;
@@ -627,8 +628,8 @@ where
     /// ```
     /// let mut map = mule_map::MuleMap::<_, _, fnv_rs::FnvBuildHasher>::from([(1, 1602), (2, 1807), (999_999, 1691), (999_998, 1800)]);
     ///
-    /// assert_eq!(map.get_disjoint_mut([&1, &999_999]), [Some(&mut 1602), Some(&mut 1691)]);
-    /// assert_eq!(map.get_disjoint_mut([&2, &4, &999_998, &999_990]), [Some(&mut 1807), None, Some(&mut 1800), None]);
+    /// assert_eq!(unsafe {map.get_disjoint_unchecked_mut([1, 999_999])}, [Some(&mut 1602), Some(&mut 1691)]);
+    /// assert_eq!(unsafe {map.get_disjoint_unchecked_mut([2, 4, 999_998, 999_990])}, [Some(&mut 1807), None, Some(&mut 1800), None]);
     /// ```
     ///
     /// # Safety
@@ -639,17 +640,18 @@ where
     #[allow(clippy::reversed_empty_ranges)]
     pub unsafe fn get_disjoint_unchecked_mut<const N: usize>(
         &mut self,
-        ks: [&K; N],
+        ks: [K; N],
     ) -> [Option<&'_ mut V>; N]
     where
         K: Key<TABLE_MIN_VALUE>,
     {
         let mut key_indices = [const { 0..0 }; N];
+        let references: [&K; N] = std::array::from_fn(|i| &ks[i]);
 
-        let mut result = unsafe { self.hash_map.get_disjoint_unchecked_mut(ks) };
+        let mut result = unsafe { self.hash_map.get_disjoint_unchecked_mut(references) };
 
         for (i, &key) in ks.iter().enumerate() {
-            if Self::use_lookup_table(*key) {
+            if Self::use_lookup_table(key) {
                 #[allow(clippy::range_plus_one)]
                 {
                     key_indices[i] = key.key_index()..key.key_index() + 1;
