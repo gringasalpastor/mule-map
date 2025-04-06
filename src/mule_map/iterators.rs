@@ -1,23 +1,20 @@
 use crate::MuleMap;
-use crate::mule_map::KeyIndex;
-use num_traits::AsPrimitive;
-use num_traits::PrimInt;
+use crate::mule_map::Key;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::BuildHasher;
-use std::hash::Hash;
 use std::iter::Enumerate;
 use std::iter::FilterMap;
-use std::ops::Add;
 
 #[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
-    TABLE_MIN_VALUE.as_() + index.as_()
+    K::add_promoted(
+        K::i128_as_promoted(TABLE_MIN_VALUE),
+        K::usize_as_promoted(index),
+    )
 }
 
 // MuleMapIter
@@ -43,13 +40,12 @@ fn filter_map_fn<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<(K, &V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_ref())
 }
 
+/// An iterator over the entries of a [`MuleMap`].
 #[derive(Debug, Clone)]
 pub struct Iter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<IterLeftSide<'a, K, V>, IterRightSide<'a, K, V>>,
@@ -58,9 +54,7 @@ pub struct Iter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -129,13 +123,12 @@ fn filter_map_fn_mut<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, &mut V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.as_mut())
 }
 
+/// A mutable iterator over the entries of a [`MuleMap`].
 #[derive(Debug)]
 pub struct IterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<IterMutLeftSide<'a, K, V>, IterMutRightSide<'a, K, V>>,
@@ -144,9 +137,7 @@ pub struct IterMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usiz
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -204,13 +195,12 @@ fn filter_map_fn_into<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, Option<V>),
 ) -> Option<(K, V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value)
 }
 
+/// An owning iterator over the entries of a [`MuleMap`].
 #[derive(Debug)]
 pub struct IntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
@@ -222,9 +212,7 @@ pub struct IntoIter<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -277,13 +265,12 @@ fn filter_map_fn_drain<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, V)>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     Some(key_from_index::<K, TABLE_MIN_VALUE>(index)).zip(value.take())
 }
 
+/// An draining iterator over the entries of a [`MuleMap`].
 #[derive(Debug)]
 pub struct DrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
@@ -295,9 +282,7 @@ pub struct DrainIter<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: us
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     DrainIter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -371,15 +356,14 @@ fn filter_map_fn_keys<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<K>
 where
-    usize: AsPrimitive<K>,
-    i128: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
 {
     value
         .as_ref()
         .map(|_| key_from_index::<K, TABLE_MIN_VALUE>(index))
 }
 
+/// An iterator over the keys of a [`MuleMap`].
 #[derive(Debug, Clone)]
 pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<KeysLeftSide<'a, K, V>, KeysRightSide<'a, K, V>>,
@@ -388,9 +372,7 @@ pub struct Keys<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Keys<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -435,6 +417,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 
 // IntoKeys
 
+/// An owning iterator over the keys of a [`MuleMap`].
 #[derive(Debug)]
 pub struct IntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::IntoKeys<K, V>, std::vec::IntoIter<K>>,
@@ -443,9 +426,7 @@ pub struct IntoKeys<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
+    K: Key<TABLE_MIN_VALUE>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -500,6 +481,7 @@ fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Op
     value.as_ref()
 }
 
+/// An iterator over the values of a [`MuleMap`].
 #[derive(Debug, Clone)]
 pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<std::collections::hash_map::Values<'a, K, V>, ValuesRightSide<'a, V>>,
@@ -507,10 +489,6 @@ pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
@@ -563,6 +541,7 @@ where
     value.as_mut()
 }
 
+/// A mutable iterator over the values of a [`MuleMap`].
 #[derive(Debug)]
 pub struct ValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
@@ -573,10 +552,6 @@ pub struct ValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: us
 
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
@@ -627,6 +602,7 @@ where
     value
 }
 
+/// An owning iterator over the values of a [`MuleMap`].
 #[derive(Debug)]
 pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> {
     iter: std::iter::Chain<
@@ -637,10 +613,6 @@ pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
-where
-    usize: AsPrimitive<K>,
-    K: Copy + Add<Output = K> + 'static,
-    i128: AsPrimitive<K>,
 {
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
@@ -684,13 +656,35 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> std::iter::Fuse
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
+    /// An iterator visiting all key-value pairs in arbitrary order. The iterator element type is `(K, &'a V)`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for (key, value) in mule_map.iter()
+    /// {
+    ///     assert!((key == 10 && *value == 2) || (key == 999_999 && *value == 1));
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::iter`]
     #[inline]
     pub fn iter(&self) -> Iter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Iter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -699,6 +693,33 @@ where
         )
     }
 
+    /// A mutable iterator visiting all key-value pairs in arbitrary order. The iterator element type is `(K, &'a mut V)`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for (key, value) in mule_map.iter_mut()
+    /// {
+    ///     *value *= 2;
+    ///     assert!((key == 10 && *value == 4) || (key == 999_999 && *value == 2));
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::iter_mut`]
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IterMut::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -707,6 +728,31 @@ where
         )
     }
 
+    /// Clears the map, returning all key-value pairs as an iterator. Keeps the allocated memory for reuse. If the
+    /// returned iterator is dropped before being fully consumed, it drops the remaining key-value pairs. The returned
+    /// iterator keeps a mutable borrow on the map to optimize its implementation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// for (key, value)  in mule_map.drain().take(1) {
+    ///     assert!((key == 10 && value == 2) || (key == 999_999 && value == 1));
+    /// }
+    /// assert!(mule_map.is_empty());
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::drain`]
     #[inline]
     pub fn drain(&mut self) -> DrainIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         DrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -715,6 +761,32 @@ where
         )
     }
 
+    /// An iterator visiting all keys in arbitrary order. The iterator element type is `K`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for key in mule_map.keys()
+    /// {
+    ///     assert!(key == 10 || key == 999_999);
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::keys`]
     #[inline]
     pub fn keys(&self) -> Keys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Keys::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -723,6 +795,33 @@ where
         )
     }
 
+    /// Creates a consuming iterator visiting all the keys in arbitrary order. The map cannot be used after calling
+    /// this. The iterator element type is `K`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for key in mule_map.into_keys()
+    /// {
+    ///     assert!(key == 10 || key == 999_999);
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::into_keys`]
     #[inline]
     pub fn into_keys(self) -> IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IntoKeys::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -731,6 +830,32 @@ where
         )
     }
 
+    /// Creates an iterator visiting all the values in arbitrary order. The iterator element type is `&'a V`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for val in mule_map.values()
+    /// {
+    ///     assert!(*val == 1 || *val == 2);
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    /// Analogous to [`HashMap::values`]
     #[inline]
     pub fn values(&self) -> Values<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Values::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -739,6 +864,33 @@ where
         )
     }
 
+    /// Creates an iterator visiting all the values in arbitrary order. The iterator element type is `&'a mut V`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for val in mule_map.values_mut()
+    /// {
+    ///     *val *= 2;
+    ///     assert!(*val == 2 || *val == 4);
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    ///  Analogous to [`HashMap::values_mut`]
     #[inline]
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         ValuesMut::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -747,6 +899,33 @@ where
         )
     }
 
+    /// Creates an iterator consuming all the values in arbitrary order. The map cannot be used after calling this. The
+    /// iterator element type is `V`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// let mut count = 0;
+    /// for val in mule_map.into_values()
+    /// {
+    ///     assert!(val == 1 || val == 2);
+    ///     count += 1;
+    /// }
+    /// assert_eq!(count, 2);
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
+    ///
+    ///  Analogous to [`HashMap::into_values`]
     #[inline]
     pub fn into_values(self) -> IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IntoValues::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
@@ -756,6 +935,28 @@ where
     }
 
     /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs (k, v) for which f(&k, &mut v) returns false. The elements are visited in
+    /// unsorted (and unspecified) order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mule_map::MuleMap;
+    ///
+    /// let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(10);
+    /// mule_map.bump_int(999_999);
+    ///
+    /// mule_map.retain(|&k, _| k % 2 == 0);
+    /// assert_eq!(mule_map.len(), 1);
+    /// assert_eq!(mule_map.get(10), Some(&2));
+    /// ```
+    ///
+    /// # Performance
+    /// O(capacity of the [`HashMap`]) + O(`TABLE_SIZE` of the lookup table). Currently all `TABLE_SIZE` elements of the
+    /// lookup table will be visited.
     ///
     ///  Analogous to [`HashMap::retain`]
     pub fn retain<F>(&mut self, mut f: F)
@@ -778,12 +979,8 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, &'a V);
     type IntoIter = Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -797,12 +994,8 @@ where
 impl<'a, K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for &'a mut MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, &'a mut V);
     type IntoIter = IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -816,12 +1009,8 @@ where
 impl<K, V, S, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> IntoIterator
     for MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>
 where
-    K: PrimInt + Eq + Hash + KeyIndex<K, TABLE_MIN_VALUE> + TryFrom<i128> + 'static,
+    K: Key<TABLE_MIN_VALUE>,
     S: BuildHasher,
-    V: PartialEq + Copy,
-    i128: AsPrimitive<K>,
-    usize: AsPrimitive<K>,
-    <K as TryFrom<i128>>::Error: Debug,
 {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
@@ -840,37 +1029,101 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_iter() {
-        let mut mule_map = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-        mule_map.bump_int(10);
-        mule_map.bump_int(10);
-        mule_map.bump_int(999_999);
-        let mut iter = mule_map.iter();
+    fn test_key_from_index() {
+        macro_rules! check_key_from_index_small {
+            (type=$prim_type:ty) => {
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(0),
+                    <$prim_type>::MIN
+                );
 
-        assert_eq!(iter.next(), Some((999_999, &1)));
-        assert_eq!(iter.next(), Some((10, &2)));
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(
+                        (1 << (<$prim_type>::BITS + 1)) - 1
+                    ),
+                    <$prim_type>::MAX
+                );
 
-        for _ in &mule_map {}
-        for _ in &mut mule_map {}
-        for _ in mule_map {}
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 }>(0),
+                    <$prim_type>::MAX
+                );
 
-        let mut mule_map2 = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-        mule_map2.bump_int(10);
-        mule_map2.bump_int(11);
-        mule_map2.bump_int(999_998);
-        mule_map2.bump_int(999_999);
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 / 2 }>(0),
+                    <$prim_type>::MAX / 2
+                );
 
-        for _ in mule_map2.drain().take(1) {}
-        assert_eq!(mule_map2.len(), 0);
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MAX as i128 / 2 }>(
+                        (<$prim_type>::MAX / 2) as usize + 1
+                    ),
+                    <$prim_type>::MAX
+                );
+            };
+        }
 
-        //keys
-        let mut mule_map_keys = MuleMap::<u32, i32, fnv_rs::FnvBuildHasher>::default();
-        mule_map_keys.bump_int(10);
-        mule_map_keys.bump_int(11);
-        mule_map_keys.bump_int(999_998);
-        mule_map_keys.bump_int(999_999);
-        for k in mule_map_keys.keys() {
-            assert!([10, 11, 999_999, 999_998].contains(&k));
+        check_key_from_index_small!(type=u8);
+        check_key_from_index_small!(type=u16);
+        check_key_from_index_small!(type=i8);
+        check_key_from_index_small!(type=i16);
+
+        macro_rules! check_key_from_index_large {
+            (type=$prim_type:ty) => {
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(0),
+                    <$prim_type>::MIN
+                );
+
+                assert_eq!(
+                    key_from_index::<$prim_type, { <$prim_type>::MIN as i128 }>(i32::MAX as usize),
+                    (<$prim_type>::MIN as i128 + i32::MAX as i128) as $prim_type
+                );
+
+                {
+                    const fn largest_table_min() -> i128 {
+                        if (<$prim_type>::BITS == 128) {
+                            return i128::MAX;
+                        }
+                        <$prim_type>::MAX as i128
+                    }
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() }>(0),
+                        largest_table_min() as $prim_type
+                    );
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() - (i32::MAX as i128) }>(
+                            0
+                        ),
+                        (largest_table_min() - (i32::MAX as i128)) as $prim_type
+                    );
+
+                    assert_eq!(
+                        key_from_index::<$prim_type, { largest_table_min() - (i32::MAX as i128) }>(
+                            i32::MAX as usize
+                        ),
+                        largest_table_min() as $prim_type
+                    );
+                }
+            };
+        }
+
+        #[allow(clippy::cast_lossless)]
+        #[allow(clippy::cast_possible_wrap)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
+        {
+            check_key_from_index_large!(type=u32);
+            check_key_from_index_large!(type=u64);
+            check_key_from_index_large!(type=u128);
+            check_key_from_index_large!(type=usize);
+
+            check_key_from_index_large!(type=i32);
+            check_key_from_index_large!(type=i64);
+            check_key_from_index_large!(type=i128);
+            check_key_from_index_large!(type=isize);
         }
     }
 }
