@@ -6,6 +6,7 @@ use std::hash::BuildHasher;
 use std::iter::Enumerate;
 use std::iter::FilterMap;
 
+#[must_use]
 #[inline]
 fn key_from_index<K, const TABLE_MIN_VALUE: i128>(index: usize) -> K
 where
@@ -28,6 +29,7 @@ type IterRightSide<'a, K, V> = FilterMap<
 >;
 
 #[inline]
+#[must_use]
 fn map_fn<'a, K, V>((key, val): (&'a K, &'a V)) -> (K, &'a V)
 where
     K: Copy,
@@ -36,6 +38,7 @@ where
 }
 
 #[inline]
+#[must_use]
 fn filter_map_fn<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<(K, &V)>
@@ -56,6 +59,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
         table: &'a [Option<V>; TABLE_SIZE],
@@ -83,11 +88,15 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, &'a V);
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -111,6 +120,7 @@ type IterMutRightSide<'a, K, V> = FilterMap<
 >;
 
 #[inline]
+#[must_use]
 fn map_fn_mut<'a, K, V>((key, val): (&'a K, &'a mut V)) -> (K, &'a mut V)
 where
     K: Copy,
@@ -119,6 +129,7 @@ where
 }
 
 #[inline]
+#[must_use]
 fn filter_map_fn_mut<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, &mut V)>
@@ -139,6 +150,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
         table: &'a mut [Option<V>; TABLE_SIZE],
@@ -168,11 +181,15 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, &'a mut V);
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -191,6 +208,7 @@ type IntoIterRightSide<K, V, const TABLE_SIZE: usize> = FilterMap<
 >;
 
 #[inline]
+#[must_use]
 fn filter_map_fn_into<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, Option<V>),
 ) -> Option<(K, V)>
@@ -214,6 +232,7 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
         table: [Option<V>; TABLE_SIZE],
@@ -238,11 +257,15 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, V);
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -261,6 +284,7 @@ type DrainIterRightSide<'a, K, V, const TABLE_SIZE: usize> = FilterMap<
 >;
 
 #[inline]
+#[must_use]
 fn filter_map_fn_drain<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &mut Option<V>),
 ) -> Option<(K, V)>
@@ -284,6 +308,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
         table: &'a mut [Option<V>; TABLE_SIZE],
@@ -311,6 +337,8 @@ where
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Drop
     for DrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
+    #[inline]
+    #[must_use]
     fn drop(&mut self) {
         for _ in &mut self.iter {}
     }
@@ -320,11 +348,15 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for DrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = (K, V);
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -344,6 +376,7 @@ type KeysRightSide<'a, K, V> =
     FilterMap<Enumerate<std::slice::Iter<'a, Option<V>>>, fn((usize, &'a Option<V>)) -> Option<K>>;
 
 #[inline]
+#[must_use]
 fn map_fn_keys<K>(key: &K) -> K
 where
     K: Copy,
@@ -352,6 +385,7 @@ where
 }
 
 #[inline]
+#[must_use]
 fn filter_map_fn_keys<K, V, const TABLE_MIN_VALUE: i128>(
     (index, value): (usize, &Option<V>),
 ) -> Option<K>
@@ -374,6 +408,8 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
         table: &'a [Option<V>; TABLE_SIZE],
@@ -400,11 +436,15 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for Keys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = K;
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -428,6 +468,8 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
 where
     K: Key<TABLE_MIN_VALUE>,
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
         table: &[Option<V>; TABLE_SIZE],
@@ -455,11 +497,15 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = K;
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -476,6 +522,7 @@ type ValuesRightSide<'a, V> =
     FilterMap<std::slice::Iter<'a, Option<V>>, fn(&Option<V>) -> Option<&V>>;
 
 #[inline]
+#[must_use]
 #[allow(clippy::ref_option)]
 fn filter_map_fn_values<V, const TABLE_MIN_VALUE: i128>(value: &Option<V>) -> Option<&V> {
     value.as_ref()
@@ -490,6 +537,8 @@ pub struct Values<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a HashMap<K, V, S>,
         table: &'a [Option<V>; TABLE_SIZE],
@@ -512,11 +561,15 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for Values<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = &'a V;
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -533,6 +586,7 @@ type ValuesMutRightSide<'a, V> =
     FilterMap<std::slice::IterMut<'a, Option<V>>, fn(&mut Option<V>) -> Option<&mut V>>;
 
 #[inline]
+#[must_use]
 fn filter_map_fn_values_mut<V, const TABLE_MIN_VALUE: i128>(
     value: &mut Option<V>,
 ) -> Option<&mut V>
@@ -553,6 +607,8 @@ pub struct ValuesMut<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: us
 impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: &'a mut HashMap<K, V, S>,
         table: &'a mut [Option<V>; TABLE_SIZE],
@@ -575,11 +631,15 @@ impl<'a, K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for ValuesMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = &'a mut V;
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -596,6 +656,7 @@ type IntoValuesRightSide<V, const TABLE_SIZE: usize> =
     FilterMap<std::array::IntoIter<Option<V>, TABLE_SIZE>, fn(Option<V>) -> Option<V>>;
 
 #[inline]
+#[must_use]
 fn filter_map_fn_into_values<V, const TABLE_MIN_VALUE: i128>(value: Option<V>) -> Option<V>
 where
 {
@@ -614,6 +675,8 @@ pub struct IntoValues<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize
 impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize>
     IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
+    #[inline]
+    #[must_use]
     fn from_hash_map_and_table<S>(
         hash_map: HashMap<K, V, S>,
         table: [Option<V>; TABLE_SIZE],
@@ -636,11 +699,15 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Iterator
     for IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     type Item = V;
+
+    #[inline]
+    #[must_use]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
 
     #[inline]
+    #[must_use]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -686,6 +753,7 @@ where
     ///
     /// Analogous to [`HashMap::iter`]
     #[inline]
+    #[must_use]
     pub fn iter(&self) -> Iter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Iter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
@@ -721,6 +789,7 @@ where
     ///
     /// Analogous to [`HashMap::iter_mut`]
     #[inline]
+    #[must_use]
     pub fn iter_mut(&mut self) -> IterMut<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IterMut::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
@@ -754,6 +823,7 @@ where
     ///
     /// Analogous to [`HashMap::drain`]
     #[inline]
+    #[must_use]
     pub fn drain(&mut self) -> DrainIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         DrainIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
@@ -788,6 +858,7 @@ where
     ///
     /// Analogous to [`HashMap::keys`]
     #[inline]
+    #[must_use]
     pub fn keys(&self) -> Keys<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Keys::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
@@ -823,6 +894,7 @@ where
     ///
     /// Analogous to [`HashMap::into_keys`]
     #[inline]
+    #[must_use]
     pub fn into_keys(self) -> IntoKeys<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IntoKeys::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
@@ -857,6 +929,7 @@ where
     ///
     /// Analogous to [`HashMap::values`]
     #[inline]
+    #[must_use]
     pub fn values(&self) -> Values<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         Values::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &self.hash_map,
@@ -892,6 +965,7 @@ where
     ///
     ///  Analogous to [`HashMap::values_mut`]
     #[inline]
+    #[must_use]
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         ValuesMut::<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             &mut self.hash_map,
@@ -927,6 +1001,7 @@ where
     ///
     ///  Analogous to [`HashMap::into_values`]
     #[inline]
+    #[must_use]
     pub fn into_values(self) -> IntoValues<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IntoValues::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,
@@ -959,6 +1034,7 @@ where
     /// lookup table will be visited.
     ///
     ///  Analogous to [`HashMap::retain`]
+    #[inline]
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&K, &mut V) -> bool,
@@ -986,6 +1062,7 @@ where
     type IntoIter = Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
 
     #[inline]
+    #[must_use]
     fn into_iter(self) -> Iter<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         self.iter()
     }
@@ -1001,6 +1078,7 @@ where
     type IntoIter = IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
 
     #[inline]
+    #[must_use]
     fn into_iter(self) -> IterMut<'a, K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         self.iter_mut()
     }
@@ -1016,6 +1094,7 @@ where
     type IntoIter = IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE>;
 
     #[inline]
+    #[must_use]
     fn into_iter(self) -> IntoIter<K, V, TABLE_MIN_VALUE, TABLE_SIZE> {
         IntoIter::<K, V, TABLE_MIN_VALUE, TABLE_SIZE>::from_hash_map_and_table(
             self.hash_map,

@@ -114,6 +114,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::Entry::key`]
     #[inline]
+    #[must_use]
     pub fn key(&self) -> K {
         match *self {
             Occupied(ref entry) => entry.key(),
@@ -182,6 +183,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::OccupiedEntry::key`]
     #[inline]
+    #[must_use]
     pub fn key(&self) -> K {
         match self {
             OccupiedEntry::HashMap(entry) => *entry.base.key(),
@@ -227,6 +229,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::OccupiedEntry::get`]
     #[inline]
+    #[must_use]
     pub fn get(&self) -> &V {
         match self {
             OccupiedEntry::HashMap(entry) => entry.base.get(),
@@ -253,6 +256,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::OccupiedEntry::get_mut`]
     #[inline]
+    #[must_use]
     pub fn get_mut(&mut self) -> &mut V {
         match self {
             OccupiedEntry::HashMap(entry) => entry.base.get_mut(),
@@ -277,6 +281,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::OccupiedEntry::into_mut`]
     #[inline]
+    #[must_use]
     pub fn into_mut(self) -> &'a mut V {
         match self {
             OccupiedEntry::HashMap(entry) => {
@@ -338,6 +343,7 @@ where
     K: PrimInt,
 {
     #[inline]
+    #[must_use]
     pub(crate) fn key(&self) -> K {
         self.key
     }
@@ -349,14 +355,17 @@ where
         )
     }
     #[inline]
+    #[must_use]
     pub(crate) fn get(&self) -> &V {
         self.value.as_ref().expect("Value should be occupied.")
     }
     #[inline]
+    #[must_use]
     pub(crate) fn get_mut(&mut self) -> &mut V {
         self.value.as_mut().expect("Value should be occupied.")
     }
     #[inline]
+    #[must_use]
     pub(crate) fn into_mut(self) -> &'a mut V {
         self.value.as_mut().expect("Value should be occupied.")
     }
@@ -386,6 +395,7 @@ where
     ///
     /// Analogous to [`std::collections::hash_map::VacantEntry::key`]
     #[inline]
+    #[must_use]
     pub fn key(&self) -> K {
         match self {
             VacantEntry::HashMap(entry) => *entry.base.key(),
@@ -441,6 +451,7 @@ where
     K: PrimInt,
 {
     #[inline]
+    #[must_use]
     pub(crate) fn key(&self) -> K {
         self.key
     }
