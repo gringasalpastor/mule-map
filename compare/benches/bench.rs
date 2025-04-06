@@ -42,10 +42,7 @@ fn entry_insert(c: &mut Criterion) {
             |b, _fraction_of_small| {
                 b.iter(|| {
                     for &key in keys.iter() {
-                        hash_map
-                            .entry(key as u32)
-                            .and_modify(|val| *val += 1)
-                            .or_insert(1);
+                        hash_map.entry(key).and_modify(|val| *val += 1).or_insert(1);
                     }
                 });
             },
