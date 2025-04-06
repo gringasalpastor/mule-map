@@ -567,6 +567,58 @@ where
         result.zip(self.get(key))
     }
 
+    /// Attempts to get mutable references to N values in the map at once.
+    ///
+    /// ...
+    /// # Example
+    ///
+    /// ```
+    /// let mut map = mule_map::MuleMap::<_, _, fnv_rs::FnvBuildHasher>::from([(1, 1602), (2, 1807), (999_999, 1691), (999_998, 1800)]);
+    ///
+    /// assert_eq!(map.get_disjoint_mut([&1, &999_999]), [Some(&mut 1602), Some(&mut 1691)]);
+    /// assert_eq!(map.get_disjoint_mut([&2, &4, &999_998, &999_990]), [Some(&mut 1807), None, Some(&mut 1800), None]);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if any keys are overlapping.
+    ///
+    /// Analogous to [`HashMap::get_disjoint_mut`]
+    #[allow(clippy::reversed_empty_ranges)]
+    pub fn get_disjoint_mut<const N: usize>(&mut self, ks: [&K; N]) -> [Option<&'_ mut V>; N]
+    where
+        K: Key<TABLE_MIN_VALUE>,
+    {
+        let mut key_indices = [const { 0..0 }; N];
+
+        let mut result = self.hash_map.get_disjoint_mut(ks);
+
+        for (i, &key) in ks.iter().enumerate() {
+            if Self::use_lookup_table(*key) {
+                #[allow(clippy::range_plus_one)]
+                {
+                    key_indices[i] = key.key_index()..key.key_index() + 1;
+                }
+            }
+        }
+
+        for (i, range) in self
+            .table
+            .get_disjoint_mut(key_indices)
+            .expect("keys should not overlap, or be out of bounds")
+            .into_iter()
+            .enumerate()
+        {
+            for v in range {
+                if v.is_some() {
+                    result[i] = v.as_mut();
+                }
+            }
+        }
+
+        result
+    }
+    ////////////////////////
+
     /// Returns a mutable reference to the value corresponding to the key.
     ///
     /// # Example

@@ -338,7 +338,6 @@ impl<K, V, const TABLE_MIN_VALUE: i128, const TABLE_SIZE: usize> Drop
     for DrainIter<'_, K, V, TABLE_MIN_VALUE, TABLE_SIZE>
 {
     #[inline]
-    #[must_use]
     fn drop(&mut self) {
         for _ in &mut self.iter {}
     }
