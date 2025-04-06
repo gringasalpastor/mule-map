@@ -15,51 +15,6 @@ pub(crate) mod entry;
 pub(crate) mod iterators;
 pub(crate) mod key;
 
-#[sealed]
-#[doc(hidden)]
-pub trait NonZeroInt {
-    type UnderlyingType;
-    const ONE: Self;
-    #[must_use]
-    #[inline]
-    fn checked_add(self, other: Self::UnderlyingType) -> Option<Self>
-    where
-        Self::UnderlyingType: bytemuck::Pod,
-        Self::UnderlyingType: AddAssign<Self::UnderlyingType>,
-        Self: bytemuck::PodInOption,
-        Self::UnderlyingType: PrimInt,
-    {
-        let mut result = Some(self);
-        let x = bytemuck::cast_mut::<Option<Self>, Self::UnderlyingType>(&mut result);
-        *x += other;
-        result
-    }
-}
-
-macro_rules! impl_non_zero {
-    (non_zero=$non_zero_type:ty, underlying=$underlying_type:ty) => {
-        #[sealed]
-        impl NonZeroInt for $non_zero_type {
-            const ONE: $non_zero_type = const { NonZero::new(1).expect("1 is not 0") };
-            type UnderlyingType = $underlying_type;
-        }
-    };
-}
-
-impl_non_zero!(non_zero = std::num::NonZeroI8, underlying = i8);
-impl_non_zero!(non_zero = std::num::NonZeroI16, underlying = i16);
-impl_non_zero!(non_zero = std::num::NonZeroI32, underlying = i32);
-impl_non_zero!(non_zero = std::num::NonZeroI64, underlying = i64);
-impl_non_zero!(non_zero = std::num::NonZeroI128, underlying = i128);
-impl_non_zero!(non_zero = std::num::NonZeroIsize, underlying = isize);
-
-impl_non_zero!(non_zero = std::num::NonZeroU8, underlying = u8);
-impl_non_zero!(non_zero = std::num::NonZeroU16, underlying = u16);
-impl_non_zero!(non_zero = std::num::NonZeroU32, underlying = u32);
-impl_non_zero!(non_zero = std::num::NonZeroU64, underlying = u64);
-impl_non_zero!(non_zero = std::num::NonZeroU128, underlying = u128);
-impl_non_zero!(non_zero = std::num::NonZeroUsize, underlying = usize);
-
 /// [`MuleMap`] is a hybrid between a [`HashMap`] and a lookup table. It improves performance for frequently accessed
 /// keys in a known range. If a key (integer) is in the user specified range, then its value will be stored directly in
 /// the lookup table.
@@ -1013,6 +968,51 @@ where
         }
     }
 }
+
+#[sealed]
+#[doc(hidden)]
+pub trait NonZeroInt {
+    type UnderlyingType;
+    const ONE: Self;
+    #[must_use]
+    #[inline]
+    fn checked_add(self, other: Self::UnderlyingType) -> Option<Self>
+    where
+        Self::UnderlyingType: bytemuck::Pod,
+        Self::UnderlyingType: AddAssign<Self::UnderlyingType>,
+        Self: bytemuck::PodInOption,
+        Self::UnderlyingType: PrimInt,
+    {
+        let mut result = Some(self);
+        let x = bytemuck::cast_mut::<Option<Self>, Self::UnderlyingType>(&mut result);
+        *x += other;
+        result
+    }
+}
+
+macro_rules! impl_non_zero {
+    (non_zero=$non_zero_type:ty, underlying=$underlying_type:ty) => {
+        #[sealed]
+        impl NonZeroInt for $non_zero_type {
+            const ONE: $non_zero_type = const { NonZero::new(1).expect("1 is not 0") };
+            type UnderlyingType = $underlying_type;
+        }
+    };
+}
+
+impl_non_zero!(non_zero = std::num::NonZeroI8, underlying = i8);
+impl_non_zero!(non_zero = std::num::NonZeroI16, underlying = i16);
+impl_non_zero!(non_zero = std::num::NonZeroI32, underlying = i32);
+impl_non_zero!(non_zero = std::num::NonZeroI64, underlying = i64);
+impl_non_zero!(non_zero = std::num::NonZeroI128, underlying = i128);
+impl_non_zero!(non_zero = std::num::NonZeroIsize, underlying = isize);
+
+impl_non_zero!(non_zero = std::num::NonZeroU8, underlying = u8);
+impl_non_zero!(non_zero = std::num::NonZeroU16, underlying = u16);
+impl_non_zero!(non_zero = std::num::NonZeroU32, underlying = u32);
+impl_non_zero!(non_zero = std::num::NonZeroU64, underlying = u64);
+impl_non_zero!(non_zero = std::num::NonZeroU128, underlying = u128);
+impl_non_zero!(non_zero = std::num::NonZeroUsize, underlying = usize);
 
 #[cfg(test)]
 mod tests {
