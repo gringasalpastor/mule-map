@@ -46,8 +46,8 @@ assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 
 ## <a name="benchmarks"></a> Benchmarks
 
-![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/violin.svg)
-![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines.svg)
+![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count-no-shuffle.png)
+![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count.png)
 
 ## License
 

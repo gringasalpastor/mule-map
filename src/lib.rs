@@ -46,8 +46,8 @@
 //!
 //! ## <a name="benchmarks"></a> Benchmarks
 //!
-//! ![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/violin.svg)
-//! ![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines.svg)
+//! ![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count-no-shuffle.png)
+//! ![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count.png)
 //!
 //! ## License
 //!

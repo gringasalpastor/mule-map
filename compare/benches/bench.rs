@@ -11,21 +11,23 @@ use std::time::Duration;
 const ITERATIONS: usize = 10_000;
 
 fn entry_insert(c: &mut Criterion) {
-    let mut group = c.benchmark_group("entry_insert");
+    let mut group = c.benchmark_group("Count Frequency");
 
     let mut rng = rng();
     const SIZE: u32 = u8::MAX as u32;
 
     let distr_small = Uniform::new_inclusive(0, u8::MAX as u32).unwrap();
     let distr_large = Uniform::new_inclusive(u8::MAX as u32 + 1, u16::MAX as u32).unwrap();
-    let fractions_of_small = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+    let fractions_of_small = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
     // NOTE: If throughput is enabled, then the line chart is disabled
     // group.throughput(Throughput::Elements(ITERATIONS as u64));
-    group.warm_up_time(Duration::from_millis(1));
-    group.measurement_time(Duration::from_millis(500));
+    group.warm_up_time(Duration::from_millis(1000));
+    group.measurement_time(Duration::from_millis(10000));
 
     for fraction_of_small in fractions_of_small.iter() {
+        let label = format!("{:?}", (fraction_of_small * 100.0) as u32);
+
         let mut keys: Vec<u32> = (0..(ITERATIONS as f64 * fraction_of_small) as usize)
             .map(|_| distr_small.sample(&mut rng))
             .collect();
@@ -37,7 +39,7 @@ fn entry_insert(c: &mut Criterion) {
         let mut hash_map: HashMap<u32, usize, fnv_rs::FnvBuildHasher> = Default::default();
 
         group.bench_with_input(
-            BenchmarkId::new("HashMap", fraction_of_small),
+            BenchmarkId::new("HashMap", &label),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
@@ -51,7 +53,7 @@ fn entry_insert(c: &mut Criterion) {
         // MuleMap bump
         let mut mule_map_bump = MuleMap::<u32, usize, fnv_rs::FnvBuildHasher>::new();
         group.bench_with_input(
-            BenchmarkId::new("MuleMap::bump", fraction_of_small),
+            BenchmarkId::new("MuleMap", &label),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
@@ -66,7 +68,7 @@ fn entry_insert(c: &mut Criterion) {
         let mut mule_nonzero_bump = MuleMap::<u32, NonZero<usize>, fnv_rs::FnvBuildHasher>::new();
 
         group.bench_with_input(
-            BenchmarkId::new("MuleMap NonZero bump", fraction_of_small),
+            BenchmarkId::new("MuleMap (NonZero)", &label),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
@@ -83,7 +85,7 @@ fn entry_insert(c: &mut Criterion) {
         let mut table_hand_rolled: Vec<usize> = vec![0; u8::MAX as usize + 1];
 
         group.bench_with_input(
-            BenchmarkId::new("HandRolled", fraction_of_small),
+            BenchmarkId::new("HandRolled", &label),
             fraction_of_small,
             |b, _fraction_of_small| {
                 b.iter(|| {
