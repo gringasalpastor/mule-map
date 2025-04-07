@@ -64,8 +64,6 @@ assert_eq!(mule_map_non_zero.get(999_999),NonZero::<i32>::new(2).as_ref());
 - **`MuleMap`** -  Uses `MuleMap<u32, usize, fnv_rs::FnvBuildHasher>`
 - **`MuleMap (NonZero)`** -  Uses `MuleMap<u32, NonZero<usize>, fnv_rs::FnvBuildHasher>`. This take advantage of the niche optimizations by directly casting `Option<NonZero<usize>>` to `usize` using bytemuck (**no unsafe code**)
 
-The "Input" horizontal axis 
-
 ![violin](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count-no-shuffle.png)
 ![lines](https://raw.githubusercontent.com/gringasalpastor/mule-map/refs/heads/master/assets/lines-freq-count.png)
 
