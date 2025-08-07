@@ -284,10 +284,7 @@ where
     #[must_use]
     pub fn into_mut(self) -> &'a mut V {
         match self {
-            OccupiedEntry::HashMap(entry) => {
-                let result = entry.base.into_mut();
-                result
-            }
+            OccupiedEntry::HashMap(entry) => entry.base.into_mut(),
             OccupiedEntry::Vec(entry) => entry.into_mut(),
         }
     }
