@@ -11,6 +11,9 @@ readme = "README.md"
 categories = ["data-structures"]
 exclude = ["assets", ".github", ".gitignore"]
 
+[workspace]
+members = [".", "compare", "test-utils"]
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
