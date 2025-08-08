@@ -5,7 +5,7 @@ edition = "2024"
 publish = false
 
 [dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
+criterion = { version = "0.7.0", features = ["html_reports"] }
 mule-map = { path = ".." }
 fnv_rs = "0.4.4"
 rand = "0.9.2"
