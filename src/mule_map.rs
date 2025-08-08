@@ -95,7 +95,6 @@ where
     /// See: [`MuleMap::with_capacity_and_hasher`]
     ///
     /// Analogous to [`HashMap::default`]
-    #[must_use]
     #[inline]
     fn default() -> Self {
         Self::new()
@@ -128,7 +127,6 @@ where
     ///
     /// assert!(mule_map1 ==  mule_map2)
     /// ```
-    #[must_use]
     #[inline]
     fn eq(&self, other: &MuleMap<K, V, S, TABLE_MIN_VALUE, TABLE_SIZE>) -> bool {
         self.hash_map == other.hash_map && self.table == other.table
@@ -169,7 +167,6 @@ where
     /// # Panics
     ///
     /// Panics if the key is not present in the `MuleMap`.
-    #[must_use]
     #[inline]
     fn index(&self, key: K) -> &V {
         self.get(key).expect("No entry found for key")
@@ -258,7 +255,6 @@ where
     /// assert_eq!(map1, mule_map);
     /// assert_eq!(map2, mule_map);
     /// ```
-    #[must_use]
     #[inline]
     fn from(arr: [(K, V); N]) -> Self {
         let mut map = Self::default();
@@ -294,7 +290,6 @@ where
     ///
     /// assert_eq!(map1, mule_map);
     /// ```
-    #[must_use]
     #[inline]
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut map = Self::default();
@@ -540,8 +535,7 @@ where
         if Self::use_lookup_table(key) {
             self.table[key.key_index()].as_ref()
         } else {
-            let result = self.hash_map.get(&key);
-            result
+            self.hash_map.get(&key)
         }
     }
 
