@@ -22,8 +22,8 @@ fn entry_insert(c: &mut Criterion) {
 
     // NOTE: If throughput is enabled, then the line chart is disabled
     // group.throughput(Throughput::Elements(ITERATIONS as u64));
-    group.warm_up_time(Duration::from_millis(1000));
-    group.measurement_time(Duration::from_millis(10000));
+    group.warm_up_time(Duration::from_secs(1));
+    group.measurement_time(Duration::from_secs(1));
 
     for fraction_of_small in &fractions_of_small {
         #[allow(clippy::cast_possible_truncation)]
